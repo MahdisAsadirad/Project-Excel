@@ -19,14 +19,109 @@ public class FormulaEvaluator {
 
     public Object evaluateFormula(String formula, String currentCell) {
         try {
-            // تبدیل به postfix
-            List<String> postfixTokens = ExpressionParser.infixToPostfix(formula);
+            // حذف فضاهای اضافه
+            formula = formula.trim();
 
-            // ارزیابی postfix
-            return evaluatePostfix(postfixTokens, currentCell);
+            // ارزیابی ساده برای شروع
+            if (formula.contains("+")) {
+                return evaluateAddition(formula, currentCell);
+            } else if (formula.contains("*")) {
+                return evaluateMultiplication(formula, currentCell);
+            } else if (formula.contains("/")) {
+                return evaluateDivision(formula, currentCell);
+            } else if (formula.contains("-") && !formula.startsWith("-")) {
+                return evaluateSubtraction(formula, currentCell);
+            } else {
+                // اگر هیچ عملگری نیست، ممکن است یک سلول یا عدد باشد
+                return evaluateSingleValue(formula, currentCell);
+            }
         } catch (Exception e) {
-            throw new InvalidFormulaException(formula, e.getMessage());
+            throw new InvalidFormulaException("Error evaluating formula: " + formula, e.getMessage());
         }
+    }
+
+    private double evaluateAddition(String formula, String currentCell) {
+        String[] parts = formula.split("\\+");
+        double result = 0;
+        for (String part : parts) {
+            result += evaluateSingleValue(part.trim(), currentCell);
+        }
+        return result;
+    }
+
+    private double evaluateMultiplication(String formula, String currentCell) {
+        String[] parts = formula.split("\\*");
+        double result = 1;
+        for (String part : parts) {
+            result *= evaluateSingleValue(part.trim(), currentCell);
+        }
+        return result;
+    }
+
+    private double evaluateDivision(String formula, String currentCell) {
+        String[] parts = formula.split("/");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Invalid division format: " + formula);
+        }
+        double numerator = evaluateSingleValue(parts[0].trim(), currentCell);
+        double denominator = evaluateSingleValue(parts[1].trim(), currentCell);
+
+        if (denominator == 0) {
+            throw new ArithmeticException("Division by zero");
+        }
+        return numerator / denominator;
+    }
+
+    private double evaluateSubtraction(String formula, String currentCell) {
+        String[] parts = formula.split("-");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Invalid subtraction format: " + formula);
+        }
+        double first = evaluateSingleValue(parts[0].trim(), currentCell);
+        double second = evaluateSingleValue(parts[1].trim(), currentCell);
+        return first - second;
+    }
+
+    private double evaluateSingleValue(String value, String currentCell) {
+        // بررسی اگر عدد است
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            // عدد نیست، ممکن است ثابت یا ارجاع سلول باشد
+        }
+
+        // بررسی ثابت‌ها
+        if ("PI".equalsIgnoreCase(value)) {
+            return Math.PI;
+        }
+        if ("E".equalsIgnoreCase(value)) {
+            return Math.E;
+        }
+
+        // بررسی ارجاع سلول
+        if (isCellReference(value)) {
+            // بررسی self-reference
+            if (value.equalsIgnoreCase(currentCell)) {
+                throw new IllegalArgumentException("Self-reference detected: " + value);
+            }
+
+            Cell cell = spreadsheet.getCell(value);
+            if (cell.hasError()) {
+                throw new IllegalArgumentException("Referenced cell has error: " + value);
+            }
+
+            try {
+                return cell.getNumericValue();
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Referenced cell does not contain numeric value: " + value);
+            }
+        }
+
+        throw new IllegalArgumentException("Cannot evaluate: " + value);
+    }
+
+    private boolean isCellReference(String value) {
+        return value.matches("[A-Za-z]\\d+");
     }
 
     private Object evaluatePostfix(List<String> postfixTokens, String currentCell) {
@@ -90,10 +185,6 @@ public class FormulaEvaluator {
         // حذف @ اگر وجود دارد (برای سازگاری با فرمت‌های مختلف)
         String ref = cellReference.replace("@", "");
         return ref.toUpperCase();
-    }
-
-    private boolean isCellReference(String token) {
-        return token.matches("[A-Za-z]@?\\d+");
     }
 
     public void updateCellFormula(Cell cell, String formula, String currentCellRef) {

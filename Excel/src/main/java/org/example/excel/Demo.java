@@ -24,7 +24,7 @@ public class Demo {
                 "SET B1=20",
                 "SET C1=30",
                 "SET D1=\"Total:\"",
-                "SET E1=A1+B1+C1",  // ✅ اضافه کردن = قبل از فرمول
+                "SET E1=A1+B1+C1", 
                 "SHOW",
                 "STATS"
         );

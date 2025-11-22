@@ -4,6 +4,17 @@ import org.example.excel.model.Operator;
 
 public class ValidationUtils {
 
+    public static boolean isFormula(String content) {
+        return content != null && content.startsWith("=");
+    }
+
+    public static String extractFormula(String content) {
+        if (!isFormula(content)) {
+            throw new IllegalArgumentException("Not a valid formula: " + content);
+        }
+        return content.substring(1).trim(); // حذف = و فضاهای اضافه
+    }
+
     public static void validateFormula(String formula) {
         if (formula == null || formula.trim().isEmpty()) {
             throw new IllegalArgumentException("Formula cannot be empty");
@@ -51,21 +62,11 @@ public class ValidationUtils {
         return content != null && content.startsWith("\"") && content.endsWith("\"") && content.length() >= 2;
     }
 
-    public static boolean isFormula(String content) {
-        return content != null && content.startsWith("=");
-    }
 
     public static String extractTextContent(String content) {
         if (!isTextContent(content)) {
             throw new IllegalArgumentException("Not a valid text content: " + content);
         }
         return content.substring(1, content.length() - 1);
-    }
-
-    public static String extractFormula(String content) {
-        if (!isFormula(content)) {
-            throw new IllegalArgumentException("Not a valid formula: " + content);
-        }
-        return content.substring(1);
     }
 }

@@ -25,20 +25,9 @@ public class SpreadsheetView {
     }
 
     private void displayHeader() {
-        // نمایش هدر ستون‌ها
-        System.out.print("     ");
+        System.out.print("   ");
         for (int col = 0; col < spreadsheet.getCols(); col++) {
             System.out.print(String.format("%-10s", CellReferenceConverter.getColumnName(col)));
-        }
-        System.out.println();
-
-        // نمایش خط جداکننده
-        System.out.print("     ");
-        for (int col = 0; col < spreadsheet.getCols(); col++) {
-            System.out.print("----------");
-            if (col < spreadsheet.getCols() - 1) {
-                System.out.print("-");
-            }
         }
         System.out.println();
     }
@@ -46,7 +35,7 @@ public class SpreadsheetView {
     private void displayRows() {
         for (int row = 0; row < spreadsheet.getRows(); row++) {
             // نمایش شماره سطر
-            System.out.print(String.format("%-3d | ", row + 1));
+            System.out.print(String.format("%-3d", row + 1));
 
             // نمایش مقادیر سلول‌ها
             for (int col = 0; col < spreadsheet.getCols(); col++) {
@@ -54,9 +43,6 @@ public class SpreadsheetView {
                 String displayValue = formatCellForDisplay(cell);
                 System.out.print(String.format("%-10s", displayValue));
 
-                if (col < spreadsheet.getCols() - 1) {
-                    System.out.print(" ");
-                }
             }
             System.out.println();
         }
@@ -69,7 +55,7 @@ public class SpreadsheetView {
 
         switch (cell.getCellType()) {
             case EMPTY:
-                return "--";
+                return "-";
             case TEXT:
                 String textValue = cell.getStringValue();
                 return truncateText(textValue, 8);
@@ -83,12 +69,12 @@ public class SpreadsheetView {
                 } else if (value != null) {
                     return truncateText(value.toString(), 8);
                 } else {
-                    return "--";
+                    return "-";
                 }
             case ERROR:
                 return "#ERR!";
             default:
-                return "--";
+                return "-";
         }
     }
 

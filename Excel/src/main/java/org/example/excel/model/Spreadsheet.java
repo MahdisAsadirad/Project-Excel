@@ -1,6 +1,7 @@
 // model/Spreadsheet.java
 package org.example.excel.model;
 
+import org.example.excel.controller.FormulaEvaluator;
 import org.example.excel.exceptions.CircularDependencyException;
 import org.example.excel.exceptions.InvalidReferenceException;
 import org.example.excel.utils.CellReferenceConverter;
@@ -166,15 +167,16 @@ public class Spreadsheet {
         return dependencies;
     }
 
+    // در کلاس Spreadsheet - جایگزینی متد calculateFormulaValue
     private void calculateFormulaValue(Cell cell, String formula, String currentCellRef) {
-        // این متد باید توسط FormulaEvaluator پیاده‌سازی شود
-        // برای حالا یک پیاده‌سازی ساده
         try {
-            // محاسبه موقت - در مرحله بعد کامل می‌شود
-            cell.setComputedValue(0.0);
+            FormulaEvaluator evaluator = new FormulaEvaluator(this);
+            Object result = evaluator.evaluateFormula(formula, currentCellRef);
+            cell.setComputedValue(result);
+            cell.clearError();
         } catch (Exception e) {
             cell.setErrorType(ErrorType.INVALID_FORMULA);
-            cell.setErrorMessage("Calculation error: " + e.getMessage());
+            cell.setErrorMessage(e.getMessage());
         }
     }
 
