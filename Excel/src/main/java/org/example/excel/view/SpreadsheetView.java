@@ -21,6 +21,7 @@ public class SpreadsheetView {
     public void displaySpreadsheet() {
         displayHeader();
         displayRows();
+        System.out.println();
         displayErrors();
     }
 
@@ -34,10 +35,8 @@ public class SpreadsheetView {
 
     private void displayRows() {
         for (int row = 0; row < spreadsheet.getRows(); row++) {
-            // نمایش شماره سطر
             System.out.print(String.format("%-3d", row + 1));
 
-            // نمایش مقادیر سلول‌ها
             for (int col = 0; col < spreadsheet.getCols(); col++) {
                 Cell cell = spreadsheet.getCell(row, col);
                 String displayValue = formatCellForDisplay(cell);
@@ -82,7 +81,6 @@ public class SpreadsheetView {
         if (value == Math.floor(value) && !Double.isInfinite(value)) {
             return String.valueOf((int) value);
         } else {
-            // محدود کردن به ۲ رقم اعشار و ۸ کاراکتر کل
             String formatted = String.format("%.2f", value);
             return formatted.length() > 8 ? formatted.substring(0, 8) : formatted;
         }
@@ -109,10 +107,6 @@ public class SpreadsheetView {
                 }
                 displayErrorType(errorType, errorCells);
             }
-        }
-
-        if (!hasErrors) {
-            System.out.println("\nNo errors in spreadsheet.");
         }
     }
 

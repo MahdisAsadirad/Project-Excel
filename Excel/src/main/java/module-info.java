@@ -1,6 +1,7 @@
 module org.example.excel {
     requires javafx.controls;
     requires javafx.fxml;
+    requires org.example.excel;
 
 
     opens org.example.excel to javafx.fxml;
