@@ -5,7 +5,17 @@ import org.example.excel.model.Operator;
 public class ValidationUtils {
 
     public static boolean isFormula(String content) {
-        return content != null && content.startsWith("=");
+        if (content == null || content.isEmpty()) {
+            return false;
+        }
+
+        String trimmed = content.trim();
+        System.out.println("DEBUG: Checking formula for: '" + trimmed + "'"); // خط دیباگ
+
+        boolean result = trimmed.startsWith("=") && trimmed.length() > 1;
+        System.out.println("DEBUG: Is formula? " + result); // خط دیباگ
+
+        return result;
     }
 
     public static String extractFormula(String content) {
@@ -68,5 +78,17 @@ public class ValidationUtils {
             throw new IllegalArgumentException("Not a valid text content: " + content);
         }
         return content.substring(1, content.length() - 1);
+    }
+
+    public static boolean isNumberContent(String content) {
+        if (content == null || content.isEmpty()) {
+            return false;
+        }
+        try {
+            Double.parseDouble(content);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

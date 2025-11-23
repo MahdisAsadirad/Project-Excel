@@ -18,7 +18,6 @@ public class ErrorReporter {
     public Map<ErrorType, List<String>> getErrorReport() {
         Map<ErrorType, List<String>> errorReport = new EnumMap<>(ErrorType.class);
 
-        // مقداردهی اولیه برای همه انواع خطا
         for (ErrorType errorType : ErrorType.values()) {
             errorReport.put(errorType, new ArrayList<>());
         }

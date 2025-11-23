@@ -109,15 +109,12 @@ public class CommandProcessor {
         String value = parts[1].trim();
 
         try {
-            // ذخیره وابستگی‌های قبلی برای تشخیص تغییرات
             Set<String> oldDependencies = new HashSet<>(
                     spreadsheet.getDependencies(cellReference)
             );
 
-            // تنظیم محتوای سلول
             spreadsheet.setCellContent(cellReference, value);
 
-            // محاسبه مجدد وابستگی‌ها
             dependencyManager.recalculateDependencies(cellReference);
 
             System.out.println("Cell " + cellReference + " set successfully.");
@@ -125,7 +122,7 @@ public class CommandProcessor {
 
         } catch (SpreadsheetException e) {
             System.out.println("Error setting cell " + cellReference + ": " + e.getMessage());
-            view.displaySpreadsheet(); // نمایش وضعیت حتی با خطا
+            view.displaySpreadsheet();
         }
     }
 

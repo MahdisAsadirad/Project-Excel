@@ -71,29 +71,33 @@ public class Spreadsheet {
 
         String trimmedContent = content.trim();
         cell.setRawContent(trimmedContent);
-
         try {
-            if (ValidationUtils.isTextContent(trimmedContent)) {
-                // مقدار متنی
-                String textValue = ValidationUtils.extractTextContent(trimmedContent);
-                cell.setCellType(CellType.TEXT);
-                cell.setComputedValue(textValue);
-            } else if (ValidationUtils.isFormula(trimmedContent)) {
+            if (ValidationUtils.isFormula(trimmedContent)) {
+                System.out.println("  -> Processing as FORMULA");
                 // فرمول
                 cell.setCellType(CellType.FORMULA);
                 String formula = ValidationUtils.extractFormula(trimmedContent);
                 processFormula(cell, formula, cellRef);
-            } else {
+            } else if (ValidationUtils.isTextContent(trimmedContent)) {
+                System.out.println("  -> Processing as TEXT");
+                // مقدار متنی
+                String textValue = ValidationUtils.extractTextContent(trimmedContent);
+                cell.setCellType(CellType.TEXT);
+                cell.setComputedValue(textValue);
+            } else if (ValidationUtils.isNumberContent(trimmedContent)) {
+                System.out.println("  -> Processing as NUMBER");
                 // مقدار عددی
-                try {
-                    double numericValue = Double.parseDouble(trimmedContent);
-                    cell.setCellType(CellType.NUMBER);
-                    cell.setComputedValue(numericValue);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid content format: " + trimmedContent);
-                }
+                double numericValue = Double.parseDouble(trimmedContent);
+                cell.setCellType(CellType.NUMBER);
+                cell.setComputedValue(numericValue);
+            } else {
+                System.out.println("  -> Processing as PLAIN TEXT");
+                // اگر هیچکدام نبود، به عنوان متن ساده در نظر بگیر
+                cell.setCellType(CellType.TEXT);
+                cell.setComputedValue(trimmedContent);
             }
         } catch (Exception e) {
+            System.out.println("  -> ERROR: " + e.getMessage());
             cell.setCellType(CellType.ERROR);
             cell.setErrorType(ErrorType.INVALID_FORMULA);
             cell.setErrorMessage(e.getMessage());
@@ -351,5 +355,18 @@ public class Spreadsheet {
             }
         }
         return sb.toString();
+    }
+
+    public void debugCellContent(String cellReference) {
+        Cell cell = getCell(cellReference);
+        System.out.println("DEBUG " + cellReference + ":");
+        System.out.println("  Raw: '" + cell.getRawContent() + "'");
+        System.out.println("  Type: " + cell.getCellType());
+        System.out.println("  IsFormula: " + ValidationUtils.isFormula(cell.getRawContent()));
+        System.out.println("  Computed: " + cell.getComputedValue());
+        System.out.println("  HasError: " + cell.hasError());
+        if (cell.hasError()) {
+            System.out.println("  Error: " + cell.getErrorMessage());
+        }
     }
 }

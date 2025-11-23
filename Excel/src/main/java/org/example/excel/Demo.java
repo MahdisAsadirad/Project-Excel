@@ -1,6 +1,5 @@
 package org.example.excel;
 
-
 import org.example.excel.model.Spreadsheet;
 import org.example.excel.view.CommandProcessor;
 
@@ -9,8 +8,7 @@ import java.util.List;
 
 public class Demo {
     public static void main(String[] args) {
-        System.out.println("=== Spreadsheet Simulator Demo ===");
-
+        System.out.println("*-*-* Spreadsheet Simulator Demo *-*-*");
         Spreadsheet spreadsheet = new Spreadsheet(5, 5);
         CommandProcessor processor = new CommandProcessor(spreadsheet);
 
@@ -24,7 +22,7 @@ public class Demo {
                 "SET B1=20",
                 "SET C1=30",
                 "SET D1=\"Total:\"",
-                "SET E1=A1+B1+C1", 
+                "SET E1==A1+B1+C1",  // ✅ با = اضافه
                 "SHOW",
                 "STATS"
         );
@@ -34,9 +32,9 @@ public class Demo {
         List<String> demo2Commands = Arrays.asList(
                 "SET A2=5",
                 "SET B2=3",
-                "SET C2=A2*B2",  // ✅ اضافه کردن =
-                "SET D2=C2+10",  // ✅ اضافه کردن =
-                "SET E2=D2/2",   // ✅ اضافه کردن =
+                "SET C2==A2*B2",  // ✅ با = اضافه
+                "SET D2==C2+10",   // ✅ با = اضافه
+                "SET E2==D2/2",    // ✅ با = اضافه
                 "SHOW",
                 "DETAIL C2",
                 "DETAIL E2"
@@ -47,7 +45,7 @@ public class Demo {
         List<String> demo3Commands = Arrays.asList(
                 "SET A3=1",
                 "SET B3=2",
-                "SET C3=A3+B3",  // ✅ اضافه کردن =
+                "SET C3==A3+B3",  // ✅ با = اضافه
                 "FILL A3 A3:A5",
                 "FILL B3 B3:B5",
                 "FILL C3 C3:C5",
@@ -59,8 +57,8 @@ public class Demo {
         List<String> demo4Commands = Arrays.asList(
                 "SET A4=10",
                 "SET B4=0",
-                "SET C4=A4/B4",
-                "SET D4=C4+5",
+                "SET C4==A4/B4", // ✅ با = اضافه - خطای تقسیم بر صفر
+                "SET D4==C4+5",   // ✅ با = اضافه - خطای وابستگی
                 "SHOW",
                 "ERRORS",
                 "DETAIL C4",
@@ -68,25 +66,26 @@ public class Demo {
         );
         processor.processBatchCommands(demo4Commands);
 
-        System.out.println("\n--- Demo 5: Circular Dependency ---");
+        System.out.println("\n--- Demo 5: Text and Mixed Content ---");
         List<String> demo5Commands = Arrays.asList(
-                "SET A5=B5+1",
-                "SET B5=A5+1",
+                "SET A1=\"Hello\"",
+                "SET B1=\"World\"",
+                "SET C1==A1&\" \"&B1", // ✅ با = اضافه - الحاق متن
                 "SHOW",
-                "ERRORS"
+                "DETAIL C1"
         );
         processor.processBatchCommands(demo5Commands);
 
         System.out.println("\n--- Demo 6: Complex Formulas ---");
         List<String> demo6Commands = Arrays.asList(
-                "SET A1=2",
-                "SET B1=3",
-                "SET C1=4",
-                "SET D1=(A1+B1)*C1",
-                "SET E1=D1/2+PI",
+                "SET A5=2",
+                "SET B5=3",
+                "SET C5=4",
+                "SET D5==(A5+B5)*C5", // ✅ با = اضافه
+                "SET E5==D5/2+PI",    // ✅ با = اضافه
                 "SHOW",
-                "DETAIL D1",
-                "DETAIL E1"
+                "DETAIL D5",
+                "DETAIL E5"
         );
         processor.processBatchCommands(demo6Commands);
 
