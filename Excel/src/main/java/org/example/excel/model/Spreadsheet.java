@@ -17,9 +17,6 @@ public class Spreadsheet {
     private final Set<String> calculationInProgress;
 
     public Spreadsheet(int rows, int cols) {
-        if (rows <= 0 || cols <= 0 || rows > 26 || cols > 26) {
-            throw new IllegalArgumentException("Invalid dimensions: " + rows + "x" + cols + ". Must be between 1x1 and 26x26.");
-        }
         this.rows = rows;
         this.cols = cols;
         this.grid = new CellArray(rows, cols);
@@ -57,7 +54,6 @@ public class Spreadsheet {
         Cell cell = grid.getCell(row, col);
         String cellRef = toCellReference(row, col);
 
-        // پاک کردن وابستگی‌های قبلی
         removeDependencies(cellRef);
         cell.clearDependencies();
         cell.clearError();
@@ -71,25 +67,29 @@ public class Spreadsheet {
 
         String trimmedContent = content.trim();
         cell.setRawContent(trimmedContent);
+
         try {
             if (ValidationUtils.isFormula(trimmedContent)) {
-                System.out.println("  -> Processing as FORMULA");
-                // فرمول
+                // فرمول - با = شروع می‌شود
+                System.out.println("  -> Processing as FORMULA: " + trimmedContent);
                 cell.setCellType(CellType.FORMULA);
                 String formula = ValidationUtils.extractFormula(trimmedContent);
                 processFormula(cell, formula, cellRef);
+
             } else if (ValidationUtils.isTextContent(trimmedContent)) {
                 System.out.println("  -> Processing as TEXT");
                 // مقدار متنی
                 String textValue = ValidationUtils.extractTextContent(trimmedContent);
                 cell.setCellType(CellType.TEXT);
                 cell.setComputedValue(textValue);
+
             } else if (ValidationUtils.isNumberContent(trimmedContent)) {
                 System.out.println("  -> Processing as NUMBER");
                 // مقدار عددی
                 double numericValue = Double.parseDouble(trimmedContent);
                 cell.setCellType(CellType.NUMBER);
                 cell.setComputedValue(numericValue);
+
             } else {
                 System.out.println("  -> Processing as PLAIN TEXT");
                 // اگر هیچکدام نبود، به عنوان متن ساده در نظر بگیر
@@ -368,5 +368,10 @@ public class Spreadsheet {
         if (cell.hasError()) {
             System.out.println("  Error: " + cell.getErrorMessage());
         }
+    }
+
+    public void cleanup() {
+        dependencyGraph.clear();
+        calculationInProgress.clear();
     }
 }

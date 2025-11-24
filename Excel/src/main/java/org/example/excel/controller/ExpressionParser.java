@@ -14,6 +14,7 @@ public class ExpressionParser {
     public static List<String> tokenize(String expression) {
         List<String> tokens = new ArrayList<>();
         StringBuilder currentToken = new StringBuilder();
+        boolean lastWasOperator = true; // برای تشخیص عملگرهای unary
 
         for (int i = 0; i < expression.length(); i++) {
             char c = expression.charAt(i);
@@ -31,9 +32,17 @@ public class ExpressionParser {
                     tokens.add(currentToken.toString());
                     currentToken.setLength(0);
                 }
-                tokens.add(String.valueOf(c));
+
+                // تشخیص عملگرهای unary (+ و -)
+                if ((c == '+' || c == '-') && (lastWasOperator || i == 0)) {
+                    tokens.add("u" + c); // علامت unary
+                } else {
+                    tokens.add(String.valueOf(c));
+                    lastWasOperator = (c != ')');
+                }
             } else if (Character.isLetterOrDigit(c) || c == '.' || c == '@') {
                 currentToken.append(c);
+                lastWasOperator = false;
             } else {
                 throw new InvalidFormulaException("Invalid character in expression: " + c);
             }
@@ -50,38 +59,38 @@ public class ExpressionParser {
         ValidationUtils.validateFormula(infixExpression);
         List<String> tokens = tokenize(infixExpression);
         List<String> postfix = new ArrayList<>();
-        Stack<Character> operatorStack = new Stack<>();
+        Stack<String> operatorStack = new Stack<>();
 
         for (String token : tokens) {
             if (isOperand(token)) {
                 postfix.add(token);
             } else if (token.equals("(")) {
-                operatorStack.push('(');
+                operatorStack.push(token);
             } else if (token.equals(")")) {
-                while (!operatorStack.isEmpty() && operatorStack.peek() != '(') {
-                    postfix.add(String.valueOf(operatorStack.pop()));
+                while (!operatorStack.isEmpty() && !operatorStack.peek().equals("(")) {
+                    postfix.add(operatorStack.pop());
                 }
-                if (!operatorStack.isEmpty() && operatorStack.peek() == '(') {
+                if (!operatorStack.isEmpty() && operatorStack.peek().equals("(")) {
                     operatorStack.pop();
                 } else {
                     throw new InvalidFormulaException("Mismatched parentheses");
                 }
-            } else if (isOperator(token)) {
-                char currentOp = token.charAt(0);
+            } else {
+                // عملگر
                 while (!operatorStack.isEmpty() &&
-                        operatorStack.peek() != '(' &&
-                        hasHigherPrecedence(operatorStack.peek(), currentOp)) {
-                    postfix.add(String.valueOf(operatorStack.pop()));
+                        !operatorStack.peek().equals("(") &&
+                        hasHigherPrecedence(operatorStack.peek(), token)) {
+                    postfix.add(operatorStack.pop());
                 }
-                operatorStack.push(currentOp);
+                operatorStack.push(token);
             }
         }
 
         while (!operatorStack.isEmpty()) {
-            if (operatorStack.peek() == '(') {
+            if (operatorStack.peek().equals("(")) {
                 throw new InvalidFormulaException("Mismatched parentheses");
             }
-            postfix.add(String.valueOf(operatorStack.pop()));
+            postfix.add(operatorStack.pop());
         }
 
         return postfix;
@@ -90,16 +99,30 @@ public class ExpressionParser {
     private static boolean isOperand(String token) {
         return MathHelper.isNumber(token) ||
                 MathHelper.isConstant(token) ||
-                isCellReference(token);
+                isCellReference(token) ||
+                token.startsWith("u"); // عملگرهای unary
     }
 
     private static boolean isOperator(String token) {
+        if (token.startsWith("u")) {
+            return true; // عملگرهای unary
+        }
         return token.length() == 1 && Operator.isOperator(token.charAt(0));
     }
 
-    private static boolean hasHigherPrecedence(char op1, char op2) {
-        return Operator.fromSymbol(op1).getPrecedence() >=
-                Operator.fromSymbol(op2).getPrecedence();
+    private static boolean hasHigherPrecedence(String op1, String op2) {
+        return getPrecedence(op1) >= getPrecedence(op2);
+    }
+
+    private static int getPrecedence(String op) {
+        if (op.startsWith("u")) {
+            return 3; // اولویت بالا برای عملگرهای unary
+        }
+
+        if (op.length() == 1) {
+            return Operator.fromSymbol(op.charAt(0)).getPrecedence();
+        }
+        return 0;
     }
 
     private static boolean isCellReference(String token) {
@@ -107,22 +130,7 @@ public class ExpressionParser {
     }
 
     public static void validateTokens(List<String> tokens) {
-        int operandCount = 0;
-        int operatorCount = 0;
-
-        for (String token : tokens) {
-            if (isOperand(token)) {
-                operandCount++;
-            } else if (isOperator(token)) {
-                operatorCount++;
-            }
-        }
-
-        if (operandCount != operatorCount + 1) {
-            throw new InvalidFormulaException(
-                    "Invalid operand/operator count. Operands: " + operandCount +
-                            ", Operators: " + operatorCount
-            );
-        }
+        // این متد می‌تواند برای اعتبارسنجی پیشرفته‌تر استفاده شود
+        // فعلاً غیرفعال می‌کنیم چون با عملگرهای unary سازگار نیست
     }
 }

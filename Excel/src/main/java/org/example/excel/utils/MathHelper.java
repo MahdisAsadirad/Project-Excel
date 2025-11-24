@@ -27,6 +27,7 @@ public class MathHelper {
         }
     }
 
+    // بقیه متدها بدون تغییر...
     public static boolean isConstant(String token) {
         return "PI".equals(token) || "E".equals(token);
     }

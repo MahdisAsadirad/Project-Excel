@@ -10,10 +10,7 @@ public class ValidationUtils {
         }
 
         String trimmed = content.trim();
-        System.out.println("DEBUG: Checking formula for: '" + trimmed + "'"); // خط دیباگ
-
         boolean result = trimmed.startsWith("=") && trimmed.length() > 1;
-        System.out.println("DEBUG: Is formula? " + result); // خط دیباگ
 
         return result;
     }

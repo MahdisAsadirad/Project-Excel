@@ -31,7 +31,6 @@ public class AutoFillManager {
 
         validateRange(startCoords, endCoords);
 
-        // اجرای AutoFill
         performAutoFill(source, sourceCoords, startCoords, endCoords);
     }
 
@@ -67,7 +66,6 @@ public class AutoFillManager {
 
         for (int row = startCoords[0]; row <= endCoords[0]; row++) {
             for (int col = startCoords[1]; col <= endCoords[1]; col++) {
-                // رد کردن سلول منبع
                 if (row == sourceCoords[0] && col == sourceCoords[1]) {
                     continue;
                 }
@@ -85,10 +83,9 @@ public class AutoFillManager {
     private String adjustContentForPosition(String sourceContent, CellType sourceType,
                                             int[] sourceCoords, int[] targetCoords) {
         if (sourceType != CellType.FORMULA) {
-            return sourceContent; // برای مقادیر ثابت و متن، بدون تغییر
+            return sourceContent;
         }
 
-        // برای فرمول‌ها، ارجاع‌های سلولی را تنظیم می‌کنیم
         return adjustFormulaReferences(sourceContent, sourceCoords, targetCoords);
     }
 
@@ -119,7 +116,6 @@ public class AutoFillManager {
             }
         }
 
-        // بررسی آخرین reference
         if (inReference && currentRef.length() > 0) {
             String ref = currentRef.toString();
             if (cellRefPattern.matcher(ref).matches()) {
@@ -136,54 +132,17 @@ public class AutoFillManager {
     private String adjustCellReference(String cellRef, int[] sourceCoords, int[] targetCoords) {
         int[] refCoords = CellReferenceConverter.fromCellReference(cellRef);
 
-        // محاسبه offset نسبی
         int rowOffset = refCoords[0] - sourceCoords[0];
         int colOffset = refCoords[1] - sourceCoords[1];
 
-        // اعمال offset به موقعیت هدف
         int newRow = targetCoords[0] + rowOffset;
         int newCol = targetCoords[1] + colOffset;
 
-        // بررسی معتبر بودن سلول جدید
         if (newRow >= 0 && newRow < spreadsheet.getRows() &&
                 newCol >= 0 && newCol < spreadsheet.getCols()) {
             return CellReferenceConverter.toCellReference(newRow, newCol);
         } else {
-            // اگر سلول خارج از محدوده باشد، ارجاع اصلی را نگه می‌داریم
             return cellRef;
         }
-    }
-
-    public void fillSeries(String startCell, String endCell, double startValue, double step) {
-        int[] startCoords = CellReferenceConverter.fromCellReference(startCell);
-        int[] endCoords = CellReferenceConverter.fromCellReference(endCell);
-
-        validateRange(startCoords, endCoords);
-
-        double currentValue = startValue;
-        int cellCount = countCellsInRange(startCoords, endCoords);
-
-        for (int i = 0; i < cellCount; i++) {
-            int[] cellCoords = getCellAtOffset(startCoords, endCoords, i);
-            String cellRef = CellReferenceConverter.toCellReference(cellCoords[0], cellCoords[1]);
-            spreadsheet.setCellContent(cellRef, String.valueOf(currentValue));
-            currentValue += step;
-        }
-    }
-
-    private int countCellsInRange(int[] start, int[] end) {
-        int rowCount = end[0] - start[0] + 1;
-        int colCount = end[1] - start[1] + 1;
-        return rowCount * colCount;
-    }
-
-    private int[] getCellAtOffset(int[] start, int[] end, int offset) {
-        int rowSpan = end[0] - start[0] + 1;
-        int colSpan = end[1] - start[1] + 1;
-
-        int rowOffset = offset / colSpan;
-        int colOffset = offset % colSpan;
-
-        return new int[]{start[0] + rowOffset, start[1] + colOffset};
     }
 }

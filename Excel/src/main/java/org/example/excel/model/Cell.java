@@ -180,7 +180,7 @@ public class Cell {
 
         switch (cellType) {
             case EMPTY:
-                return "--";
+                return "-";
             case TEXT:
                 return computedValue != null ? computedValue.toString() :
                         (rawContent.startsWith("\"") && rawContent.endsWith("\"") ?
@@ -194,7 +194,7 @@ public class Cell {
                 } else if (computedValue != null) {
                     return computedValue.toString();
                 } else {
-                    return "--";
+                    return "-";
                 }
             case ERROR:
                 return "#ERR!";
