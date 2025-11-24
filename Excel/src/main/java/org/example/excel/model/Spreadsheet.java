@@ -71,7 +71,6 @@ public class Spreadsheet {
 
         try {
             if (ValidationUtils.isFormula(trimmedContent)) {
-                // فرمول - با = شروع می‌شود
                 System.out.println("  -> Processing as FORMULA: " + trimmedContent);
                 cell.setCellType(CellType.FORMULA);
                 String formula = ValidationUtils.extractFormula(trimmedContent);
@@ -79,21 +78,18 @@ public class Spreadsheet {
 
             } else if (ValidationUtils.isTextContent(trimmedContent)) {
                 System.out.println("  -> Processing as TEXT");
-                // مقدار متنی
                 String textValue = ValidationUtils.extractTextContent(trimmedContent);
                 cell.setCellType(CellType.TEXT);
                 cell.setComputedValue(textValue);
 
             } else if (ValidationUtils.isNumberContent(trimmedContent)) {
                 System.out.println("  -> Processing as NUMBER");
-                // مقدار عددی
                 double numericValue = Double.parseDouble(trimmedContent);
                 cell.setCellType(CellType.NUMBER);
                 cell.setComputedValue(numericValue);
 
             } else {
                 System.out.println("  -> Processing as PLAIN TEXT");
-                // اگر هیچکدام نبود، به عنوان متن ساده در نظر بگیر
                 cell.setCellType(CellType.TEXT);
                 cell.setComputedValue(trimmedContent);
             }
@@ -106,15 +102,13 @@ public class Spreadsheet {
         }
     }
 
-    // در کلاس Spreadsheet - متد processFormula را بهبود می‌دهیم
-    // در کلاس Spreadsheet.java - متد processFormula را اصلاح کنید
     private void processFormula(Cell cell, String formula, String currentCellRef) {
         try {
             System.out.println("DEBUG: Processing formula: " + formula + " for cell: " + currentCellRef);
 
             ValidationUtils.validateFormula(formula);
 
-            // استخراج وابستگی‌ها از فرمول با استفاده از ExpressionParser
+            // استخراج وابستگی‌ها از فرمول (شامل سلول‌ها در توابع تجمعی)
             Set<String> dependencies = ExpressionParser.extractCellReferences(formula);
             cell.setDependencies(dependencies);
 
@@ -145,41 +139,6 @@ public class Spreadsheet {
         }
     }
 
-    private Set<String> extractDependencies(String formula) {
-        Set<String> dependencies = new HashSet<>();
-        StringBuilder currentRef = new StringBuilder();
-        boolean inReference = false;
-
-        for (char c : formula.toCharArray()) {
-            if (Character.isLetter(c)) {
-                inReference = true;
-                currentRef.append(c);
-            } else if (Character.isDigit(c) && inReference) {
-                currentRef.append(c);
-            } else {
-                if (inReference && currentRef.length() > 0) {
-                    String ref = currentRef.toString();
-                    if (CellReferenceConverter.isValidCellReference(ref)) {
-                        dependencies.add(ref.toUpperCase());
-                    }
-                    currentRef.setLength(0);
-                }
-                inReference = false;
-            }
-        }
-
-        // بررسی آخرین reference
-        if (inReference && currentRef.length() > 0) {
-            String ref = currentRef.toString();
-            if (CellReferenceConverter.isValidCellReference(ref)) {
-                dependencies.add(ref.toUpperCase());
-            }
-        }
-
-        return dependencies;
-    }
-
-    // در کلاس Spreadsheet - جایگزینی متد calculateFormulaValue
     private void calculateFormulaValue(Cell cell, String formula, String currentCellRef) {
         try {
             FormulaEvaluator evaluator = new FormulaEvaluator(this);
@@ -197,12 +156,9 @@ public class Spreadsheet {
     }
 
     private void removeDependencies(String cellReference) {
-        // حذف تمام وابستگی‌هایی که این سلول به دیگران دارد
         for (Set<String> dependents : dependencyGraph.values()) {
             dependents.remove(cellReference);
         }
-
-        // حذف ورودی این سلول از گراف اگر وجود دارد
         dependencyGraph.remove(cellReference);
     }
 
@@ -290,12 +246,10 @@ public class Spreadsheet {
         }
     }
 
-    // اضافه کردن متد isValidCellReference
     public boolean isValidCellReference(String cellReference) {
         return grid.isValidCellReference(cellReference);
     }
 
-    // اضافه کردن متد isValidCoordinate
     public boolean isValidCoordinate(int row, int col) {
         return grid.isValidCoordinate(row, col);
     }

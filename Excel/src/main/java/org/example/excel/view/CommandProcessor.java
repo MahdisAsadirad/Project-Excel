@@ -201,8 +201,6 @@ public class CommandProcessor {
         }
     }
 
-    // متد جدید برای پیش‌پردازش مقدار
-    // در CommandProcessor - متد preprocessValue را اصلاح می‌کنیم
     private String preprocessValue(String cellRef, String value) {
         if (value == null || value.trim().isEmpty()) {
             return value;
@@ -210,38 +208,57 @@ public class CommandProcessor {
 
         String trimmed = value.trim();
 
-        // --- حالت متن کوتیشن‌دار ---
+        // متن کوتیشن‌دار
         if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
                 (trimmed.startsWith("”") && trimmed.endsWith("”"))) {
-            return trimmed; // متن کوتیشن‌دار را بدون تغییر بگذار
+            return trimmed;
         }
 
-        // --- اگر با = شروع شده، فرمول است ---
+        // اگر با = شروع شده، فرمول است
         if (trimmed.startsWith("=")) {
             return trimmed;
         }
 
-        // --- اگر با عملگر unary شروع شد → فرمول است ---
+        // اگر حاوی تابع تجمعی است → فرمول است
+        if (containsAggregateFunction(trimmed)) {
+            return "=" + trimmed;
+        }
+
+        // اگر حاوی عملگر فاکتوریل است → فرمول است
+        if (trimmed.contains("!")) {
+            return "=" + trimmed;
+        }
+
+        // اگر با عملگر unary شروع شد → فرمول است
         if (trimmed.matches("^[+\\-].*") && !trimmed.matches("^[+-]?\\d+(\\.\\d+)?$")) {
             return "=" + trimmed;
         }
 
-        // --- اگر حاوی عملگر یا ارجاع سلولی است → فرمول است ---
+        // اگر حاوی عملگر یا ارجاع سلولی است → فرمول است
         if (looksLikeFormula(trimmed)) {
             return "=" + trimmed;
         }
 
-        // --- عدد ساده → مستقیم ---
+        // عدد ساده → مستقیم
         try {
             Double.parseDouble(trimmed);
             return trimmed;
         } catch (NumberFormatException e) { }
 
-        // --- در غیر این صورت متن ساده ---
+        // در غیر این صورت متن ساده
         return trimmed;
     }
 
-    // بهبود متد looksLikeFormula
+    private boolean containsAggregateFunction(String value) {
+        if (value == null) return false;
+        String upperValue = value.toUpperCase();
+        return upperValue.contains("SUM(") ||
+                upperValue.contains("AVG(") ||
+                upperValue.contains("MAX(") ||
+                upperValue.contains("MIN(") ||
+                upperValue.contains("COUNT(");
+    }
+
     private boolean looksLikeFormula(String value) {
         if (value == null || value.isEmpty()) {
             return false;
@@ -261,27 +278,36 @@ public class CommandProcessor {
             // ادامه بررسی
         }
 
-        // بررسی کن آیا حاوی عملگرهای ریاضی است (به جز + و - در ابتدا)
-        String coreValue = value.replaceAll("^[+-]", ""); // حذف + و - از ابتدا
-        boolean hasOperators = coreValue.matches(".*[+\\-*/].*");
+        // بررسی کن آیا حاوی عملگرهای ریاضی است
+        String coreValue = value.replaceAll("^[+-]", "");
+        boolean hasOperators = coreValue.matches(".*[+\\-*/^!].*");
 
-        // بررسی کن آیا حاوی ارجاع سلولی است (مثل A1, B2, etc.)
+        // بررسی کن آیا حاوی ارجاع سلولی است
         boolean hasCellReferences = value.matches(".*[A-Za-z]\\d+.*");
 
         // بررسی کن آیا حاوی ثابت‌های PI یا E است
         boolean hasConstants = value.matches(".*\\b(PI|E|pi|e)\\b.*");
 
-        // اگر عملگر دارد یا ارجاع سلولی دارد یا ثابت دارد، احتمالاً فرمول است
-        boolean looksLikeFormula = hasOperators || hasCellReferences || hasConstants;
+        // بررسی کن آیا حاوی توابع تجمعی است
+        boolean hasAggregateFunctions = containsAggregateFunction(value);
+
+        // بررسی کن آیا حاوی محدوده است (A1:B5)
+        boolean hasRange = value.matches(".*[A-Za-z]\\d+\\s*:\\s*[A-Za-z]\\d+.*");
+
+        boolean looksLikeFormula = hasOperators || hasCellReferences || hasConstants ||
+                hasAggregateFunctions || hasRange;
 
         System.out.println("DEBUG: looksLikeFormula - value: '" + value +
                 "', hasOperators: " + hasOperators +
                 ", hasCellReferences: " + hasCellReferences +
                 ", hasConstants: " + hasConstants +
+                ", hasAggregateFunctions: " + hasAggregateFunctions +
+                ", hasRange: " + hasRange +
                 ", result: " + looksLikeFormula);
 
         return looksLikeFormula;
     }
+
 
     private void displayHelp() {
         System.out.println("\n=== AVAILABLE COMMANDS ===");

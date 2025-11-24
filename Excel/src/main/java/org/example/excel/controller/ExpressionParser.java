@@ -1,9 +1,8 @@
-// ExpressionParser.java - بخش‌های بهبود یافته
+// controller/ExpressionParser.java
 package org.example.excel.controller;
 
-// import statements...
-
 import org.example.excel.exceptions.InvalidFormulaException;
+import org.example.excel.model.Cell;
 import org.example.excel.model.Operator;
 import org.example.excel.model.Spreadsheet;
 import org.example.excel.model.Stack;
@@ -15,48 +14,75 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ExpressionParser {
 
-    // متد tokenize موجود - فقط بخش عملگر فاکتوریل را اضافه می‌کنیم
     public static List<String> tokenize(String expression) {
         List<String> tokens = new ArrayList<>();
         StringBuilder currentToken = new StringBuilder();
-        boolean lastWasOperator = true; // برای تشخیص عملگرهای unary
+        boolean lastWasOperator = true;
         boolean inText = false;
+        boolean inFunction = false;
+        int parenCount = 0;
 
         for (int i = 0; i < expression.length(); i++) {
             char c = expression.charAt(i);
 
-            // نادیده گرفتن فضاهای خالی
             if (Character.isWhitespace(c)) {
-                if (currentToken.length() > 0 && !inText) {
+                if (currentToken.length() > 0 && !inText && !inFunction) {
                     tokens.add(currentToken.toString());
                     currentToken.setLength(0);
+                    lastWasOperator = false;
                 }
                 continue;
             }
 
-            // مدیریت متن درون کوتیشن
             if (c == '"') {
                 inText = !inText;
                 currentToken.append(c);
                 continue;
             }
-
             if (inText) {
                 currentToken.append(c);
                 continue;
             }
 
-            // تشخیص عملگر فاکتوریل (postfix)
-            if (c == '!' && (i == 0 || expression.charAt(i-1) != '!')) {
+            // شناسایی توابع تجمعی
+            if (Character.isLetter(c) && currentToken.length() == 0 && parenCount == 0) {
+                currentToken.append(c);
+                String potentialFunction = currentToken.toString().toUpperCase();
+                if (potentialFunction.matches("(SUM|AVG|MAX|MIN|COUNT)")) {
+                    inFunction = true;
+                    parenCount = 0;
+                }
+                continue;
+            }
+
+            if (inFunction) {
+                currentToken.append(c);
+                if (c == '(') {
+                    parenCount++;
+                } else if (c == ')') {
+                    parenCount--;
+                    if (parenCount == 0) {
+                        tokens.add(currentToken.toString());
+                        currentToken.setLength(0);
+                        inFunction = false;
+                        lastWasOperator = false;
+                    }
+                }
+                continue;
+            }
+
+            if (c == '!') {
                 if (currentToken.length() > 0) {
                     tokens.add(currentToken.toString());
                     currentToken.setLength(0);
                 }
                 tokens.add("!");
-                lastWasOperator = true;
+                lastWasOperator = false;
                 continue;
             }
 
@@ -66,15 +92,22 @@ public class ExpressionParser {
                     currentToken.setLength(0);
                 }
 
-                // تشخیص عملگرهای unary (+ و -)
-                if ((c == '+' || c == '-') && (lastWasOperator || i == 0 || expression.charAt(i-1) == '(')) {
-                    tokens.add("u" + c); // علامت unary
+                if (c == '(') {
+                    parenCount++;
+                    tokens.add("(");
+                    lastWasOperator = true;
+                } else if (c == ')') {
+                    parenCount--;
+                    tokens.add(")");
+                    lastWasOperator = false;
+                } else if ((c == '+' || c == '-') && (lastWasOperator || i == 0)) {
+                    tokens.add("u" + c);
                     lastWasOperator = true;
                 } else {
                     tokens.add(String.valueOf(c));
-                    lastWasOperator = (c != ')');
+                    lastWasOperator = true;
                 }
-            } else if (Character.isLetterOrDigit(c) || c == '.' || c == '_') {
+            } else if (Character.isLetterOrDigit(c) || c == '.' || c == '_' || c == ':') {
                 currentToken.append(c);
                 lastWasOperator = false;
             } else {
@@ -89,7 +122,6 @@ public class ExpressionParser {
         return tokens;
     }
 
-    // الگوریتم infixToPostfix بهبود یافته برای پشتیبانی از عملگر postfix
     public static List<String> infixToPostfix(String infixExpression) {
         ValidationUtils.validateFormula(infixExpression);
         List<String> tokens = tokenize(infixExpression);
@@ -99,13 +131,8 @@ public class ExpressionParser {
         System.out.println("DEBUG: Tokens: " + tokens);
 
         for (String token : tokens) {
-            if (isOperand(token)) {
+            if (isOperand(token) || isAggregateFunction(token)) {
                 postfix.add(token);
-
-                // برای عملگرهای postfix مانند فاکتوریل، بلافاصله بعد از عملوند اضافه می‌شوند
-                while (!operatorStack.isEmpty() && MathHelper.isPostfixOperator(operatorStack.peek())) {
-                    postfix.add(operatorStack.pop());
-                }
             } else if (token.equals("(")) {
                 operatorStack.push(token);
             } else if (token.equals(")")) {
@@ -117,17 +144,14 @@ public class ExpressionParser {
                 }
                 operatorStack.pop(); // حذف '('
 
-                // بعد از بستن پرانتز، عملگرهای postfix را بررسی کن
-                while (!operatorStack.isEmpty() && MathHelper.isPostfixOperator(operatorStack.peek())) {
+                // اگر بعد از پرانتز بسته، تابع در استک است، آن را اضافه کن
+                if (!operatorStack.isEmpty() && isAggregateFunction(operatorStack.peek())) {
                     postfix.add(operatorStack.pop());
                 }
             } else {
-                // عملگر (باینری، unary یا postfix)
                 if (MathHelper.isPostfixOperator(token)) {
-                    // عملگر postfix (مانند !) - روی پشته می‌ماند تا عملوند پردازش شود
-                    operatorStack.push(token);
+                    postfix.add(token);
                 } else {
-                    // عملگرهای باینری و unary
                     while (!operatorStack.isEmpty() &&
                             !operatorStack.peek().equals("(") &&
                             hasHigherPrecedence(operatorStack.peek(), token)) {
@@ -138,7 +162,6 @@ public class ExpressionParser {
             }
         }
 
-        // اضافه کردن باقی‌مانده عملگرها
         while (!operatorStack.isEmpty()) {
             if (operatorStack.peek().equals("(")) {
                 throw new InvalidFormulaException("Mismatched parentheses");
@@ -150,7 +173,6 @@ public class ExpressionParser {
         return postfix;
     }
 
-    // متدهای کمکی بدون تغییر...
     private static boolean hasHigherPrecedence(String op1, String op2) {
         int prec1 = getPrecedence(op1);
         int prec2 = getPrecedence(op2);
@@ -160,18 +182,22 @@ public class ExpressionParser {
         }
 
         if (prec1 == prec2) {
-            return !MathHelper.isUnaryOrPostfixOperator(op1);
+            return isLeftAssociative(op1);
         }
 
         return false;
     }
 
+    private static boolean isLeftAssociative(String op) {
+        return !MathHelper.isUnaryOrPostfixOperator(op);
+    }
+
     private static int getPrecedence(String op) {
         if (MathHelper.isUnaryOrPostfixOperator(op)) {
             if ("!".equals(op)) {
-                return 4; // بالاترین اولویت برای فاکتوریل
+                return 4;
             }
-            return 4; // اولویت بالا برای عملگرهای unary
+            return 3;
         }
 
         if (op.length() == 1) {
@@ -180,6 +206,12 @@ public class ExpressionParser {
                 return Operator.fromSymbol(c).getPrecedence();
             }
         }
+
+        // برای توابع تجمعی اولویت بالا در نظر بگیر
+        if (isAggregateFunction(op)) {
+            return 5;
+        }
+
         return 0;
     }
 
@@ -187,13 +219,17 @@ public class ExpressionParser {
         return MathHelper.isNumber(token) ||
                 MathHelper.isConstant(token) ||
                 isCellReference(token) ||
-                (token.startsWith("\"") && token.endsWith("\"")); // متن
+                isRangeReference(token) ||
+                (token.startsWith("\"") && token.endsWith("\""));
     }
 
-    private static boolean isCellReference(String token) {
+    public static boolean isCellReference(String token) {
         return token.matches("[A-Za-z]\\d+");
     }
 
+    public static boolean isRangeReference(String token) {
+        return token.matches("[A-Za-z]\\d+:[A-Za-z]\\d+");
+    }
 
     public static boolean isAggregateFunction(String token) {
         if (token == null) return false;
@@ -205,63 +241,87 @@ public class ExpressionParser {
                 upperToken.startsWith("COUNT(");
     }
 
-    // متد جدید برای تجزیه توابع تجمعی
-    public static String parseAggregateFunction(String functionCall, Spreadsheet spreadsheet) {
-        if (functionCall == null || !functionCall.endsWith(")")) {
-            throw new IllegalArgumentException("Invalid function call: " + functionCall);
-        }
-
-        String upperCall = functionCall.toUpperCase();
-        String functionName = upperCall.substring(0, upperCall.indexOf('('));
-        String range = upperCall.substring(upperCall.indexOf('(') + 1, upperCall.length() - 1);
-
-        switch (functionName) {
-            case "SUM":
-                return String.valueOf(AggregateFunctions.sum(spreadsheet, range));
-            case "AVG":
-                return String.valueOf(AggregateFunctions.average(spreadsheet, range));
-            case "MAX":
-                return String.valueOf(AggregateFunctions.max(spreadsheet, range));
-            case "MIN":
-                return String.valueOf(AggregateFunctions.min(spreadsheet, range));
-            case "COUNT":
-                return String.valueOf(AggregateFunctions.count(spreadsheet, range));
-            default:
-                throw new IllegalArgumentException("Unknown function: " + functionName);
-        }
-    }
-
     public static Set<String> extractCellReferences(String formula) {
         Set<String> references = new HashSet<>();
-        StringBuilder currentRef = new StringBuilder();
-        boolean inReference = false;
 
-        for (char c : formula.toCharArray()) {
-            if (Character.isLetter(c)) {
-                inReference = true;
-                currentRef.append(c);
-            } else if (Character.isDigit(c) && inReference) {
-                currentRef.append(c);
-            } else {
-                if (inReference && currentRef.length() > 0) {
-                    String ref = currentRef.toString();
-                    if (isCellReference(ref)) {
-                        references.add(ref.toUpperCase());
-                    }
-                    currentRef.setLength(0);
-                }
-                inReference = false;
-            }
+        // الگو برای شناسایی سلول‌های منفرد (A1, B2, etc.)
+        Pattern singleCellPattern = Pattern.compile("[A-Za-z]\\d+");
+        Matcher singleMatcher = singleCellPattern.matcher(formula);
+
+        while (singleMatcher.find()) {
+            references.add(singleMatcher.group().toUpperCase());
         }
 
-        // بررسی آخرین reference
-        if (inReference && currentRef.length() > 0) {
-            String ref = currentRef.toString();
-            if (isCellReference(ref)) {
-                references.add(ref.toUpperCase());
-            }
+        // الگو برای شناسایی محدوده‌ها در توابع تجمعی (A1:B5)
+        Pattern rangePattern = Pattern.compile("([A-Za-z]\\d+):([A-Za-z]\\d+)");
+        Matcher rangeMatcher = rangePattern.matcher(formula);
+
+        while (rangeMatcher.find()) {
+            String startCell = rangeMatcher.group(1).toUpperCase();
+            String endCell = rangeMatcher.group(2).toUpperCase();
+
+            // استخراج تمام سلول‌های موجود در محدوده
+            references.addAll(extractCellsInRange(startCell, endCell));
         }
 
         return references;
+    }
+
+    private static Set<String> extractCellsInRange(String startCell, String endCell) {
+        Set<String> cells = new HashSet<>();
+
+        int startCol = startCell.charAt(0) - 'A';
+        int startRow = Integer.parseInt(startCell.substring(1)) - 1;
+        int endCol = endCell.charAt(0) - 'A';
+        int endRow = Integer.parseInt(endCell.substring(1)) - 1;
+
+        for (int row = startRow; row <= endRow; row++) {
+            for (int col = startCol; col <= endCol; col++) {
+                String cellRef = "" + (char)('A' + col) + (row + 1);
+                cells.add(cellRef);
+            }
+        }
+
+        return cells;
+    }
+
+    public static List<Double> getValuesFromRange(String range, Spreadsheet spreadsheet) {
+        String[] parts = range.split(":");
+        if (parts.length != 2) throw new IllegalArgumentException("Invalid range: " + range);
+
+        String start = parts[0].toUpperCase();
+        String end = parts[1].toUpperCase();
+
+        int startCol = start.charAt(0) - 'A';
+        int startRow = Integer.parseInt(start.substring(1)) - 1;
+        int endCol = end.charAt(0) - 'A';
+        int endRow = Integer.parseInt(end.substring(1)) - 1;
+
+        List<Double> values = new ArrayList<>();
+        for (int r = startRow; r <= endRow; r++) {
+            for (int c = startCol; c <= endCol; c++) {
+                String cellName = "" + (char)('A' + c) + (r + 1);
+                Cell cell = spreadsheet.getCell(cellName);
+                if (cell != null && cell.getComputedValue() instanceof Number) {
+                    double val = ((Number)cell.getComputedValue()).doubleValue();
+                    values.add(val);
+                } else {
+                    // اگر سلول خالی است یا مقدار عددی ندارد، صفر در نظر بگیر
+                    values.add(0.0);
+                }
+            }
+        }
+        return values;
+    }
+
+    // متد جدید برای استخراج محدوده از تابع تجمعی
+    public static String extractRangeFromFunction(String functionCall) {
+        if (!isAggregateFunction(functionCall)) {
+            throw new IllegalArgumentException("Not an aggregate function: " + functionCall);
+        }
+
+        int start = functionCall.indexOf('(') + 1;
+        int end = functionCall.lastIndexOf(')');
+        return functionCall.substring(start, end);
     }
 }

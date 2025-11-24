@@ -1,4 +1,4 @@
-// FormulaEvaluator.java
+// controller/FormulaEvaluator.java
 package org.example.excel.controller;
 
 import org.example.excel.exceptions.InvalidFormulaException;
@@ -6,6 +6,7 @@ import org.example.excel.exceptions.InvalidReferenceException;
 import org.example.excel.model.Cell;
 import org.example.excel.model.Spreadsheet;
 import org.example.excel.model.Stack;
+import org.example.excel.utils.AggregateFunctions;
 import org.example.excel.utils.MathHelper;
 
 import java.util.List;
@@ -33,7 +34,6 @@ public class FormulaEvaluator {
         }
     }
 
-    // در FormulaEvaluator - اضافه کردن پشتیبانی از توابع در evaluatePostfix
     private Object evaluatePostfix(List<String> postfixTokens, String currentCell) {
         Stack<Object> valueStack = new Stack<>();
 
@@ -45,21 +45,36 @@ public class FormulaEvaluator {
             } else if (MathHelper.isConstant(token)) {
                 double constantValue = MathHelper.getConstantValue(token);
                 valueStack.push(constantValue);
-            } else if (isCellReference(token)) {
+            } else if (ExpressionParser.isCellReference(token)) {
                 double cellValue = getCellValue(token, currentCell);
                 valueStack.push(cellValue);
+            } else if (ExpressionParser.isRangeReference(token)) {
+                // محدوده به عنوان یک عملوند واحد
+                valueStack.push(token);
             } else if (ExpressionParser.isAggregateFunction(token)) {
-                // پردازش توابع تجمعی
-                String result = ExpressionParser.parseAggregateFunction(token, spreadsheet);
-                valueStack.push(Double.parseDouble(result));
-            } else if (MathHelper.isUnaryOrPostfixOperator(token)) {
-                // پردازش عملگرهای unary و postfix
+                try {
+                    double result = evaluateAggregateFunction(token);
+                    valueStack.push(result);
+                } catch (Exception e) {
+                    throw new InvalidFormulaException("Error in aggregate function: " + e.getMessage());
+                }
+            } else if (token.equals("u+") || token.equals("u-")) {
                 if (valueStack.isEmpty()) {
-                    throw new InvalidFormulaException("Insufficient operands for operator: " + token);
+                    throw new InvalidFormulaException("Insufficient operands for unary operator: " + token);
                 }
                 Object operand = valueStack.pop();
                 if (!(operand instanceof Double)) {
-                    throw new InvalidFormulaException("Operator " + token + " requires numeric operand");
+                    throw new InvalidFormulaException("Unary operator requires numeric operand");
+                }
+                double result = MathHelper.applyUnaryOrPostfixOperator(token, (Double) operand);
+                valueStack.push(result);
+            } else if (token.equals("!")) {
+                if (valueStack.isEmpty()) {
+                    throw new InvalidFormulaException("Insufficient operands for postfix operator: " + token);
+                }
+                Object operand = valueStack.pop();
+                if (!(operand instanceof Double)) {
+                    throw new InvalidFormulaException("Postfix operator requires numeric operand");
                 }
                 double result = MathHelper.applyUnaryOrPostfixOperator(token, (Double) operand);
                 valueStack.push(result);
@@ -69,7 +84,7 @@ public class FormulaEvaluator {
             } else {
                 // عملگر باینری
                 if (valueStack.size() < 2) {
-                    throw new InvalidFormulaException("Insufficient operands for operator: " + token);
+                    throw new InvalidFormulaException("Insufficient operands for binary operator: " + token);
                 }
 
                 Object b = valueStack.pop();
@@ -85,16 +100,57 @@ public class FormulaEvaluator {
         }
 
         if (valueStack.size() != 1) {
-            throw new InvalidFormulaException("Invalid expression evaluation");
+            throw new InvalidFormulaException("Invalid expression evaluation - stack has " + valueStack.size() + " items");
         }
 
-        return valueStack.pop();
+        Object result = valueStack.pop();
+        System.out.println("DEBUG: Final result: " + result);
+        return result;
+    }
+
+    private double evaluateAggregateFunction(String functionCall) {
+        String upperCall = functionCall.toUpperCase();
+
+        int parenStart = upperCall.indexOf('(');
+        int parenEnd = upperCall.lastIndexOf(')');
+
+        if (parenStart == -1 || parenEnd == -1) {
+            throw new IllegalArgumentException("Invalid function call: " + functionCall);
+        }
+
+        String functionName = upperCall.substring(0, parenStart);
+        String range = upperCall.substring(parenStart + 1, parenEnd);
+
+        System.out.println("DEBUG: Evaluating function: " + functionName + " with range: " + range);
+
+        // اعتبارسنجی محدوده
+        if (!isValidRange(range)) {
+            throw new IllegalArgumentException("Invalid range format: " + range);
+        }
+
+        switch (functionName) {
+            case "SUM":
+                return AggregateFunctions.sum(spreadsheet, range);
+            case "AVG":
+                return AggregateFunctions.average(spreadsheet, range);
+            case "MAX":
+                return AggregateFunctions.max(spreadsheet, range);
+            case "MIN":
+                return AggregateFunctions.min(spreadsheet, range);
+            case "COUNT":
+                return AggregateFunctions.count(spreadsheet, range);
+            default:
+                throw new IllegalArgumentException("Unknown function: " + functionName);
+        }
+    }
+
+    private boolean isValidRange(String range) {
+        return range.matches("[A-Za-z]\\d+:[A-Za-z]\\d+");
     }
 
     private double getCellValue(String cellReference, String currentCell) {
         String normalizedRef = normalizeCellReference(cellReference);
 
-        // بررسی self-reference
         if (normalizedRef.equals(currentCell)) {
             throw new InvalidFormulaException("Self-reference detected: " + cellReference);
         }
@@ -119,10 +175,6 @@ public class FormulaEvaluator {
                     "Cell " + normalizedRef + " does not contain numeric value: " + e.getMessage()
             );
         }
-    }
-
-    private boolean isCellReference(String value) {
-        return value.matches("[A-Za-z]\\d+");
     }
 
     private String normalizeCellReference(String cellReference) {

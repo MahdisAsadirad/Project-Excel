@@ -88,4 +88,14 @@ public class ValidationUtils {
             return false;
         }
     }
+
+    // utils/ValidationUtils.java
+// اضافه کردن این متد:
+
+    public static boolean isValidRange(String range) {
+        if (range == null || range.trim().isEmpty()) {
+            return false;
+        }
+        return range.matches("[A-Za-z]\\d+:[A-Za-z]\\d+");
+    }
 }
