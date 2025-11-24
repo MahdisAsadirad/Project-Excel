@@ -1,3 +1,4 @@
+// FormulaEvaluator.java
 package org.example.excel.controller;
 
 import org.example.excel.exceptions.InvalidFormulaException;
@@ -18,42 +19,67 @@ public class FormulaEvaluator {
 
     public Object evaluateFormula(String formula, String currentCell) {
         try {
-            // استفاده از ExpressionParser برای تبدیل و ارزیابی
+            System.out.println("DEBUG: Evaluating formula: " + formula + " for cell: " + currentCell);
+
             List<String> postfixTokens = ExpressionParser.infixToPostfix(formula);
-            return evaluatePostfix(postfixTokens, currentCell);
+            Object result = evaluatePostfix(postfixTokens, currentCell);
+
+            System.out.println("DEBUG: Formula result: " + result);
+            return result;
+
         } catch (Exception e) {
+            System.out.println("DEBUG: Formula evaluation failed: " + e.getMessage());
             throw new InvalidFormulaException("Error evaluating formula: " + formula, e.getMessage());
         }
     }
 
+    // در FormulaEvaluator - اضافه کردن پشتیبانی از توابع در evaluatePostfix
     private Object evaluatePostfix(List<String> postfixTokens, String currentCell) {
-        Stack<Double> valueStack = new Stack<>();
+        Stack<Object> valueStack = new Stack<>();
 
         for (String token : postfixTokens) {
+            System.out.println("DEBUG: Processing token: " + token + ", Stack: " + valueStack);
+
             if (MathHelper.isNumber(token)) {
                 valueStack.push(MathHelper.parseNumber(token));
             } else if (MathHelper.isConstant(token)) {
-                valueStack.push(MathHelper.getConstantValue(token));
+                double constantValue = MathHelper.getConstantValue(token);
+                valueStack.push(constantValue);
             } else if (isCellReference(token)) {
                 double cellValue = getCellValue(token, currentCell);
                 valueStack.push(cellValue);
-            } else if (token.startsWith("u")) {
-                // عملگر unary (مثل u+ یا u-)
+            } else if (ExpressionParser.isAggregateFunction(token)) {
+                // پردازش توابع تجمعی
+                String result = ExpressionParser.parseAggregateFunction(token, spreadsheet);
+                valueStack.push(Double.parseDouble(result));
+            } else if (MathHelper.isUnaryOrPostfixOperator(token)) {
+                // پردازش عملگرهای unary و postfix
                 if (valueStack.isEmpty()) {
-                    throw new InvalidFormulaException("Insufficient operands for unary operator: " + token);
+                    throw new InvalidFormulaException("Insufficient operands for operator: " + token);
                 }
-                double operand = valueStack.pop();
-                double result = applyUnaryOperator(token, operand);
+                Object operand = valueStack.pop();
+                if (!(operand instanceof Double)) {
+                    throw new InvalidFormulaException("Operator " + token + " requires numeric operand");
+                }
+                double result = MathHelper.applyUnaryOrPostfixOperator(token, (Double) operand);
                 valueStack.push(result);
+            } else if (token.startsWith("\"") && token.endsWith("\"")) {
+                String textValue = token.substring(1, token.length() - 1);
+                valueStack.push(textValue);
             } else {
                 // عملگر باینری
                 if (valueStack.size() < 2) {
                     throw new InvalidFormulaException("Insufficient operands for operator: " + token);
                 }
 
-                double b = valueStack.pop();
-                double a = valueStack.pop();
-                double result = MathHelper.applyOperation(token.charAt(0), a, b);
+                Object b = valueStack.pop();
+                Object a = valueStack.pop();
+
+                if (!(a instanceof Double) || !(b instanceof Double)) {
+                    throw new InvalidFormulaException("Binary operators require numeric operands");
+                }
+
+                double result = MathHelper.applyOperation(token.charAt(0), (Double) a, (Double) b);
                 valueStack.push(result);
             }
         }
@@ -65,18 +91,6 @@ public class FormulaEvaluator {
         return valueStack.pop();
     }
 
-    private double applyUnaryOperator(String operator, double operand) {
-        char op = operator.charAt(1); // حرف دوم (مثلاً + یا -)
-        switch (op) {
-            case '+':
-                return +operand;
-            case '-':
-                return -operand;
-            default:
-                throw new InvalidFormulaException("Unknown unary operator: " + operator);
-        }
-    }
-
     private double getCellValue(String cellReference, String currentCell) {
         String normalizedRef = normalizeCellReference(cellReference);
 
@@ -86,6 +100,10 @@ public class FormulaEvaluator {
         }
 
         Cell cell = spreadsheet.getCell(normalizedRef);
+        if (cell == null) {
+            throw new InvalidReferenceException("Cell not found: " + normalizedRef);
+        }
+
         if (cell.hasError()) {
             throw new InvalidReferenceException(
                     "Cell " + normalizedRef + " has error: " + cell.getErrorMessage()
@@ -93,10 +111,12 @@ public class FormulaEvaluator {
         }
 
         try {
-            return cell.getNumericValue();
+            double value = cell.getNumericValue();
+            System.out.println("DEBUG: Cell " + normalizedRef + " value: " + value);
+            return value;
         } catch (IllegalStateException e) {
             throw new InvalidReferenceException(
-                    "Cell " + normalizedRef + " does not contain numeric value"
+                    "Cell " + normalizedRef + " does not contain numeric value: " + e.getMessage()
             );
         }
     }
@@ -106,8 +126,7 @@ public class FormulaEvaluator {
     }
 
     private String normalizeCellReference(String cellReference) {
-        String ref = cellReference.replace("@", "");
-        return ref.toUpperCase();
+        return cellReference.toUpperCase();
     }
 
     public void updateCellFormula(Cell cell, String formula, String currentCellRef) {
@@ -115,8 +134,10 @@ public class FormulaEvaluator {
             Object result = evaluateFormula(formula, currentCellRef);
             cell.setComputedValue(result);
             cell.clearError();
+            System.out.println("DEBUG: Cell formula updated successfully");
         } catch (Exception e) {
             cell.setComputedValue(null);
+            System.out.println("DEBUG: Cell formula update failed: " + e.getMessage());
             throw e;
         }
     }

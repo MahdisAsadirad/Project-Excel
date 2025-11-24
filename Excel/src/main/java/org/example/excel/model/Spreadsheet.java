@@ -1,6 +1,7 @@
 // model/Spreadsheet.java
 package org.example.excel.model;
 
+import org.example.excel.controller.ExpressionParser;
 import org.example.excel.controller.FormulaEvaluator;
 import org.example.excel.exceptions.CircularDependencyException;
 import org.example.excel.exceptions.InvalidReferenceException;
@@ -105,13 +106,19 @@ public class Spreadsheet {
         }
     }
 
+    // در کلاس Spreadsheet - متد processFormula را بهبود می‌دهیم
+    // در کلاس Spreadsheet.java - متد processFormula را اصلاح کنید
     private void processFormula(Cell cell, String formula, String currentCellRef) {
         try {
+            System.out.println("DEBUG: Processing formula: " + formula + " for cell: " + currentCellRef);
+
             ValidationUtils.validateFormula(formula);
 
-            // استخراج وابستگی‌ها از فرمول
-            Set<String> dependencies = extractDependencies(formula);
+            // استخراج وابستگی‌ها از فرمول با استفاده از ExpressionParser
+            Set<String> dependencies = ExpressionParser.extractCellReferences(formula);
             cell.setDependencies(dependencies);
+
+            System.out.println("DEBUG: Dependencies found: " + dependencies);
 
             // اضافه کردن وابستگی‌ها به گراف
             for (String dependency : dependencies) {
@@ -131,6 +138,7 @@ public class Spreadsheet {
             calculateFormulaValue(cell, formula, currentCellRef);
 
         } catch (Exception e) {
+            System.out.println("DEBUG: Formula processing failed: " + e.getMessage());
             cell.setErrorType(ErrorType.INVALID_FORMULA);
             cell.setErrorMessage(e.getMessage());
             propagateError(currentCellRef);

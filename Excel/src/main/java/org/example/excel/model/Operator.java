@@ -1,3 +1,4 @@
+// Operator.java
 package org.example.excel.model;
 
 public enum Operator {
@@ -6,6 +7,7 @@ public enum Operator {
     MULTIPLICATION('*', 2),
     DIVISION('/', 2),
     POWER('^', 3),
+    FACTORIAL('!', 4),
     LEFT_PARENTHESIS('(', 0),
     RIGHT_PARENTHESIS(')', 0);
 
@@ -41,5 +43,15 @@ public enum Operator {
             }
         }
         return false;
+    }
+
+    // متد جدید برای بررسی اینکه آیا عملگر باینری است
+    public static boolean isBinaryOperator(char c) {
+        return c == '+' || c == '-' || c == '*' || c == '/' || c == '^';
+    }
+
+    // متد جدید برای بررسی اینکه آیا عملگر unary است
+    public static boolean isUnaryOperator(char c) {
+        return c == '!' || c == 'u' + '+' || c == 'u' + '-';
     }
 }

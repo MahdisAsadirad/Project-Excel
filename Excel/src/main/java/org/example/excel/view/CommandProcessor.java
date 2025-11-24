@@ -25,6 +25,7 @@ public class CommandProcessor {
         this.scanner = new Scanner(System.in);
     }
 
+    // در CommandProcessor - متد startInteractiveMode را اصلاح می‌کنیم
     public void startInteractiveMode() {
         System.out.println("*.*.* Spreadsheet *.*.*");
         System.out.println("Type 'HELP' for available commands.");
@@ -33,13 +34,25 @@ public class CommandProcessor {
         while (running) {
             try {
                 System.out.print("\n> ");
-                String input = scanner.nextLine();
+                String inputLine = scanner.nextLine().trim();
 
-                if (input.isEmpty()) {
+                if (inputLine.isEmpty()) {
                     continue;
                 }
 
-                running = processCommand(input);
+                // تقسیم خط ورودی به دستورات مجزا (با ; یا خطوط جدید)
+                String[] commands = inputLine.split(";|\\n");
+
+                for (String command : commands) {
+                    command = command.trim();
+                    if (!command.isEmpty()) {
+                        boolean continueRunning = processSingleCommand(command);
+                        if (!continueRunning) {
+                            running = false;
+                            break;
+                        }
+                    }
+                }
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());
             }
@@ -48,63 +61,122 @@ public class CommandProcessor {
         scanner.close();
     }
 
-    public boolean processCommand(String command) {
+    // اضافه کردن متد processSingleCommand
+    private boolean processSingleCommand(String command) {
         String upperCommand = command.toUpperCase().trim();
 
-        // --- NEW: direct assignment like A1=10 ---
-        if (command.matches("^[A-Za-z]+\\d+\\s*=.*")) {
+        // --- تشخیص دستور SET صریح ---
+        if (upperCommand.startsWith("SET ")) {
+            processSetCommand(command);
+            return true;
+        }
+
+        // --- تشخیص انتساب مستقیم مانند A1=10 ---
+        if (command.matches("^[A-Za-z]+\\d+\\s*=\\s*[^=].*")) {
             processDirectAssignment(command);
             return true;
         }
 
-        if (upperCommand.equals("QUIT")) {
-            System.out.println("Goodbye!");
-            return false;
+        // سایر دستورات...
+        switch (upperCommand) {
+            case "QUIT":
+            case "EXIT":
+                System.out.println("Goodbye!");
+                return false;
+            case "HELP":
+                displayHelp();
+                break;
+            case "SHOW":
+                view.displaySpreadsheet();
+                break;
+            case "CLEAR":
+                processClearCommand(command);
+                break;
+            case "STATS":
+                view.displayGridStatistics();
+                break;
+            case "ERRORS":
+                view.displayErrors();
+                break;
+            case "RECALC":
+                processRecalcCommand();
+                break;
+            default:
+                if (upperCommand.startsWith("FILL ")) {
+                    processFillCommand(command);
+                } else if (upperCommand.startsWith("DETAIL ")) {
+                    processDetailCommand(command);
+                } else {
+                    System.out.println("Unknown command: " + command);
+                    System.out.println("Type 'HELP' for available commands.");
+                }
+        }
 
-        } else if (upperCommand.equals("HELP")) {
-            displayHelp();
+        return true;
+    }
+    // در CommandProcessor - اصلاح منطق پردازش دستورات
+    public boolean processCommand(String command) {
+        String upperCommand = command.toUpperCase().trim();
 
-        } else if (upperCommand.equals("SHOW")) {
-            view.displaySpreadsheet();
-
-        } else if (upperCommand.equals("CLEAR")) {
-            processClearCommand(command);
-
-        } else if (upperCommand.equals("STATS")) {
-            view.displayGridStatistics();
-
-        } else if (upperCommand.equals("ERRORS")) {
-            view.displayErrors();
-
-        }  else if (upperCommand.startsWith("SET ")) {
+        // --- تشخیص دستور SET صریح ---
+        if (upperCommand.startsWith("SET ")) {
             processSetCommand(command);
+            return true;
+        }
 
-        } else if (upperCommand.startsWith("FILL ")) {
-            processFillCommand(command);
+        // --- تشخیص انتساب مستقیم مانند A1=10 ---
+        if (command.matches("^[A-Za-z]+\\d+\\s*=\\s*[^=].*")) {
+            processDirectAssignment(command);
+            return true;
+        }
 
-        } else if (upperCommand.startsWith("DETAIL ")) {
-            processDetailCommand(command);
-
-        } else if (upperCommand.startsWith("RECALC")) {
-            processRecalcCommand();
-
-        } else {
-            System.out.println("Unknown command. Type 'HELP' for available commands.");
+        // سایر دستورات...
+        switch (upperCommand) {
+            case "QUIT":
+                System.out.println("Goodbye!");
+                return false;
+            case "HELP":
+                displayHelp();
+                break;
+            case "SHOW":
+                view.displaySpreadsheet();
+                break;
+            case "CLEAR":
+                processClearCommand(command);
+                break;
+            case "STATS":
+                view.displayGridStatistics();
+                break;
+            case "ERRORS":
+                view.displayErrors();
+                break;
+            case "RECALC":
+                processRecalcCommand();
+                break;
+            case "FILL":
+                processFillCommand(command);
+                break;
+            case "DETAIL":
+                processDetailCommand(command);
+                break;
+            default:
+                System.out.println("Unknown command. Type 'HELP' for available commands.");
         }
 
         return true;
     }
 
+    // بهبود processDirectAssignment برای جلوگیری از پردازش مجدد
     private void processDirectAssignment(String command) {
-        String[] parts = command.split("=", 2);
-
-        if (parts.length != 2) {
+        // تقسیم بر اساس اولین =
+        int firstEquals = command.indexOf('=');
+        if (firstEquals == -1) {
             System.out.println("Invalid assignment format.");
             return;
         }
 
-        String cellRef = parts[0].trim().toUpperCase();
-        String value = parts[1].trim();
+        String cellRef = command.substring(0, firstEquals).trim().toUpperCase();
+        String value = command.substring(firstEquals + 1).trim();
 
         System.out.println("DEBUG: Setting " + cellRef + " to: '" + value + "'");
 
@@ -114,7 +186,7 @@ public class CommandProcessor {
         }
 
         try {
-            // استفاده از متد preprocessValue
+            // استفاده از متد preprocessValue بهبودیافته
             String processedValue = preprocessValue(cellRef, value);
 
             System.out.println("DEBUG: Processed value: '" + processedValue + "'");
@@ -130,59 +202,54 @@ public class CommandProcessor {
     }
 
     // متد جدید برای پیش‌پردازش مقدار
+    // در CommandProcessor - متد preprocessValue را اصلاح می‌کنیم
     private String preprocessValue(String cellRef, String value) {
         if (value == null || value.trim().isEmpty()) {
             return value;
         }
 
         String trimmed = value.trim();
+
         // --- حالت متن کوتیشن‌دار ---
-        if ((trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2) || (trimmed.startsWith("”") && trimmed.endsWith("”") && trimmed.length() >= 2) ) {
-            return trimmed.substring(1, trimmed.length() - 1); // حذف " از ابتدا و انتها
+        if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
+                (trimmed.startsWith("”") && trimmed.endsWith("”"))) {
+            return trimmed; // متن کوتیشن‌دار را بدون تغییر بگذار
         }
 
-
+        // --- اگر با = شروع شده، فرمول است ---
         if (trimmed.startsWith("=")) {
-            return trimmed; // فرمول واقعی
+            return trimmed;
         }
 
-        // اگر با عملگر شروع شد → به مقدار فعلی اعمال کن
-        if (trimmed.matches("^[+\\-*/].*")) {
-            double currentValue = 0;
-            try {
-                currentValue = spreadsheet.getCell(cellRef).getNumericValue();
-            } catch (Exception e) {
-                currentValue = 0;
-            }
-            // فرمول = currentValue + rest
-            return "=" + currentValue + trimmed;
+        // --- اگر با عملگر unary شروع شد → فرمول است ---
+        if (trimmed.matches("^[+\\-].*") && !trimmed.matches("^[+-]?\\d+(\\.\\d+)?$")) {
+            return "=" + trimmed;
         }
 
-        // عدد ساده → جایگزین مستقیم
+        // --- اگر حاوی عملگر یا ارجاع سلولی است → فرمول است ---
+        if (looksLikeFormula(trimmed)) {
+            return "=" + trimmed;
+        }
+
+        // --- عدد ساده → مستقیم ---
         try {
             Double.parseDouble(trimmed);
             return trimmed;
         } catch (NumberFormatException e) { }
 
-        // بررسی شبیه فرمول
-        if (looksLikeFormula(trimmed)) {
-            return "=" + trimmed;
-        }
-
-        // متن ساده
+        // --- در غیر این صورت متن ساده ---
         return trimmed;
     }
 
-
-
-    // متد جدید برای تشخیص فرمول
+    // بهبود متد looksLikeFormula
     private boolean looksLikeFormula(String value) {
         if (value == null || value.isEmpty()) {
             return false;
         }
 
         // اگر متن درون کوتیشن است، فرمول نیست
-        if (value.startsWith("\"") && value.endsWith("\"")) {
+        if ((value.startsWith("\"") && value.endsWith("\"")) ||
+                (value.startsWith("”") && value.endsWith("”"))) {
             return false;
         }
 
@@ -194,18 +261,23 @@ public class CommandProcessor {
             // ادامه بررسی
         }
 
-        // بررسی کن آیا حاوی عملگرهای ریاضی است
-        boolean hasOperators = value.matches(".*[+\\-*/].*");
+        // بررسی کن آیا حاوی عملگرهای ریاضی است (به جز + و - در ابتدا)
+        String coreValue = value.replaceAll("^[+-]", ""); // حذف + و - از ابتدا
+        boolean hasOperators = coreValue.matches(".*[+\\-*/].*");
 
         // بررسی کن آیا حاوی ارجاع سلولی است (مثل A1, B2, etc.)
         boolean hasCellReferences = value.matches(".*[A-Za-z]\\d+.*");
 
-        // اگر عملگر دارد یا ارجاع سلولی دارد، احتمالاً فرمول است
-        boolean looksLikeFormula = hasOperators || hasCellReferences;
+        // بررسی کن آیا حاوی ثابت‌های PI یا E است
+        boolean hasConstants = value.matches(".*\\b(PI|E|pi|e)\\b.*");
+
+        // اگر عملگر دارد یا ارجاع سلولی دارد یا ثابت دارد، احتمالاً فرمول است
+        boolean looksLikeFormula = hasOperators || hasCellReferences || hasConstants;
 
         System.out.println("DEBUG: looksLikeFormula - value: '" + value +
                 "', hasOperators: " + hasOperators +
                 ", hasCellReferences: " + hasCellReferences +
+                ", hasConstants: " + hasConstants +
                 ", result: " + looksLikeFormula);
 
         return looksLikeFormula;
