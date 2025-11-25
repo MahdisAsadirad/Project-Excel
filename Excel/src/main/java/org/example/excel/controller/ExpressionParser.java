@@ -30,62 +30,49 @@ public class ExpressionParser {
         for (int i = 0; i < expression.length(); i++) {
             char c = expression.charAt(i);
 
-            if (Character.isWhitespace(c)) {
-                if (currentToken.length() > 0 && !inText && !inFunction) {
-                    tokens.add(currentToken.toString());
-                    currentToken.setLength(0);
-                    lastWasOperator = false;
-                }
-                continue;
-            }
+            if (Character.isWhitespace(c)) continue;
 
             if (c == '"') {
                 inText = !inText;
                 currentToken.append(c);
                 continue;
             }
+
             if (inText) {
                 currentToken.append(c);
                 continue;
             }
 
             // شناسایی توابع تجمعی
-            if (Character.isLetter(c) && currentToken.length() == 0 && parenCount == 0) {
+            if (!inFunction && currentToken.length() == 0 && Character.isLetter(c)) {
+                currentToken.append(c);
+                continue;
+            }
+
+            if (!inFunction && currentToken.length() > 0 && Character.isLetter(c)) {
                 currentToken.append(c);
                 String potentialFunction = currentToken.toString().toUpperCase();
                 if (potentialFunction.matches("(SUM|AVG|MAX|MIN|COUNT)")) {
                     inFunction = true;
-                    parenCount = 0;
                 }
                 continue;
             }
 
             if (inFunction) {
                 currentToken.append(c);
-                if (c == '(') {
-                    parenCount++;
-                } else if (c == ')') {
-                    parenCount--;
-                    if (parenCount == 0) {
-                        tokens.add(currentToken.toString());
-                        currentToken.setLength(0);
-                        inFunction = false;
-                        lastWasOperator = false;
-                    }
-                }
-                continue;
-            }
+                if (c == '(') parenCount++;
+                else if (c == ')') parenCount--;
 
-            if (c == '!') {
-                if (currentToken.length() > 0) {
-                    tokens.add(currentToken.toString());
+                if (parenCount == 0) {
+                    tokens.add(currentToken.toString()); // کل تابع به یک توکن
                     currentToken.setLength(0);
+                    inFunction = false;
+                    lastWasOperator = false;
                 }
-                tokens.add("!");
-                lastWasOperator = false;
                 continue;
             }
 
+            // عملیات و پرانتزها
             if (Operator.isOperator(c) || c == '(' || c == ')') {
                 if (currentToken.length() > 0) {
                     tokens.add(currentToken.toString());
@@ -93,32 +80,25 @@ public class ExpressionParser {
                 }
 
                 if (c == '(') {
-                    parenCount++;
                     tokens.add("(");
                     lastWasOperator = true;
                 } else if (c == ')') {
-                    parenCount--;
                     tokens.add(")");
                     lastWasOperator = false;
                 } else if ((c == '+' || c == '-') && (lastWasOperator || i == 0)) {
-                    tokens.add("u" + c);
+                    tokens.add("U" + c);
                     lastWasOperator = true;
                 } else {
                     tokens.add(String.valueOf(c));
                     lastWasOperator = true;
                 }
-            } else if (Character.isLetterOrDigit(c) || c == '.' || c == '_' || c == ':') {
+            } else {
                 currentToken.append(c);
                 lastWasOperator = false;
-            } else {
-                throw new InvalidFormulaException("Invalid character in expression: '" + c + "'");
             }
         }
 
-        if (currentToken.length() > 0) {
-            tokens.add(currentToken.toString());
-        }
-
+        if (currentToken.length() > 0) tokens.add(currentToken.toString());
         return tokens;
     }
 
@@ -133,7 +113,7 @@ public class ExpressionParser {
         for (String token : tokens) {
             if (isOperand(token) || isAggregateFunction(token)) {
                 postfix.add(token);
-            } else if (token.equals("(")) {
+            }  else if (token.equals("(")) {
                 operatorStack.push(token);
             } else if (token.equals(")")) {
                 while (!operatorStack.isEmpty() && !operatorStack.peek().equals("(")) {
@@ -144,7 +124,7 @@ public class ExpressionParser {
                 }
                 operatorStack.pop(); // حذف '('
 
-                // اگر بعد از پرانتز بسته، تابع در استک است، آن را اضافه کن
+                // اگر تابع در استک است، آن را اضافه کن
                 if (!operatorStack.isEmpty() && isAggregateFunction(operatorStack.peek())) {
                     postfix.add(operatorStack.pop());
                 }
@@ -207,7 +187,6 @@ public class ExpressionParser {
             }
         }
 
-        // برای توابع تجمعی اولویت بالا در نظر بگیر
         if (isAggregateFunction(op)) {
             return 5;
         }
