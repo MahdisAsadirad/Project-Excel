@@ -386,4 +386,19 @@ public class Spreadsheet {
         dependencyGraph.clear();
         calculationInProgress.clear();
     }
+
+    public Map<ErrorType, List<String>> getErrorReport() {
+        Map<ErrorType, List<String>> errorReport = new EnumMap<>(ErrorType.class);
+        for (ErrorType type : ErrorType.values()) errorReport.put(type, new ArrayList<>());
+
+        for (int row = 0; row < rows; row++)
+            for (int col = 0; col < cols; col++) {
+                Cell cell = getCell(row, col);
+                if (cell.hasError())
+                    errorReport.get(cell.getErrorType()).add(CellReferenceConverter.toCellReference(row, col));
+            }
+
+        return errorReport;
+    }
+
 }

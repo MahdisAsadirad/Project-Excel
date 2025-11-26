@@ -10,11 +10,9 @@ import java.util.Map;
 
 public class SpreadsheetView {
     private final Spreadsheet spreadsheet;
-    private final ErrorReporter errorReporter;
 
     public SpreadsheetView(Spreadsheet spreadsheet) {
         this.spreadsheet = spreadsheet;
-        this.errorReporter = new ErrorReporter(spreadsheet);
     }
 
     public void displaySpreadsheet() {
@@ -57,7 +55,7 @@ public class SpreadsheetView {
                 return "-";
 
             case TEXT:
-                return truncateText(cell.getStringValue(), 10);
+                return truncateText(cell.getStringValue(), 8);
 
             case NUMBER:
             case FORMULA:
@@ -68,7 +66,7 @@ public class SpreadsheetView {
                     return value.toString();
                 if (value instanceof Double)
                     return formatNumber((Double) value);
-                return truncateText(value.toString(), 10);
+                return truncateText(value.toString(), 8);
 
             case ERROR:
                 return "#ERR!";
@@ -102,7 +100,7 @@ public class SpreadsheetView {
 
 
     public void displayErrors() {
-        Map<ErrorType, List<String>> errorReport = errorReporter.getErrorReport();
+        Map<ErrorType, List<String>> errorReport = spreadsheet.getErrorReport();
 
         boolean hasErrors = false;
         for (ErrorType errorType : ErrorType.values()) {
@@ -145,6 +143,10 @@ public class SpreadsheetView {
         }
 
         Cell cell = spreadsheet.getCell(cellReference);
+        if (cell == null) {
+            System.out.println("Cell is empty.");
+            return;
+        }
 
         System.out.println("\n((CELL DETAILS))");
         System.out.println("Cell: " + cellReference);
@@ -174,6 +176,7 @@ public class SpreadsheetView {
                         break;
                     case FORMULA:
                         formula++;
+                        break;
                     case ERROR:
                         error++;
                         break;

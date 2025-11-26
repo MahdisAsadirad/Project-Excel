@@ -32,6 +32,7 @@ public class SpreadsheetGUIController implements Initializable {
     @FXML private Button redoButton;
     @FXML private Button clearButton;
 
+    // دیتای جدول، هر سطر یک ObservableList<String> از مقادیر سلول‌هاست
     private final ObservableList<ObservableList<String>> tableData;
 
     public SpreadsheetGUIController(Spreadsheet spreadsheet, CommandProcessor commandProcessor) {
@@ -56,19 +57,27 @@ public class SpreadsheetGUIController implements Initializable {
         spreadsheetTable.setEditable(false);
         spreadsheetTable.setFixedCellSize(25);
 
+        // مطمئن می‌شیم هیچ ستونی و سطری قبلاً اضافه نشده
         spreadsheetTable.getColumns().clear();
 
+        // برای هر ستون یک TableColumn می‌سازیم
         for (int i = 0; i < spreadsheet.getCols(); i++) {
             final int columnIndex = i;
             TableColumn<ObservableList<String>, String> column = new TableColumn<>(
                     CellReferenceConverter.getColumnName(i)
             );
 
+            //  مقدار دهی: هر سطر خودش یک ObservableList است
             column.setCellValueFactory(param -> {
                 ObservableList<String> row = param.getValue();
-                return new SimpleStringProperty(row.get(columnIndex));
+                if (columnIndex < row.size()) {
+                    return new SimpleStringProperty(row.get(columnIndex));
+                } else {
+                    return new SimpleStringProperty("");
+                }
             });
 
+            //استایل دهی سلول
             column.setCellFactory(_ -> new SpreadsheetTableCell(columnIndex));
 
             column.setPrefWidth(100);
@@ -78,6 +87,7 @@ public class SpreadsheetGUIController implements Initializable {
 
         refreshTableData();
 
+        // دابل کلیک برای ویرایش
         spreadsheetTable.setRowFactory(tv -> {
             TableRow<ObservableList<String>> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -88,6 +98,7 @@ public class SpreadsheetGUIController implements Initializable {
             return row;
         });
 
+        //آپدیت دکمه ها
         spreadsheetTable.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldSelection, newSelection) -> updateButtonStates());
     }
@@ -117,8 +128,9 @@ public class SpreadsheetGUIController implements Initializable {
         commandField.setOnAction(e -> executeCommand());
     }
 
+    // میانبرهای کیبورد (Ctrl+Z، Ctrl+Y، Ctrl+Enter و Delete)
     private void setupKeyboardShortcuts() {
-        Scene scene = spreadsheetTable.getScene();
+        Scene scene = (spreadsheetTable != null) ? spreadsheetTable.getScene() : null;
         if (scene != null) {
             // Undo: Ctrl+Z
             scene.getAccelerators().put(
@@ -143,6 +155,8 @@ public class SpreadsheetGUIController implements Initializable {
                     new KeyCodeCombination(KeyCode.DELETE),
                     this::clearSelectedCell
             );
+        } else  {
+            System.out.println("Keyboard shortcuts not found");
         }
     }
 
@@ -221,7 +235,8 @@ public class SpreadsheetGUIController implements Initializable {
             Cell cell = spreadsheet.getCell(cellRef);
 
             String currentValue = cell.getRawContent();
-            if (currentValue.isEmpty() && cell.getCellType() != org.example.model.CellType.FORMULA) {
+            // اگر خالیه و فرمول نیست، بذار خالی بمونه
+            if (currentValue.isEmpty() && cell.getCellType() != CellType.FORMULA) {
                 currentValue = "";
             }
 
@@ -257,6 +272,7 @@ public class SpreadsheetGUIController implements Initializable {
         executeCommand();
     }
 
+    // وضعیت دکمه‌ها (فعال/غیرفعال)
     @FXML
     private void updateButtonStates() {
         undoButton.setDisable(!spreadsheet.canUndo());
@@ -264,6 +280,7 @@ public class SpreadsheetGUIController implements Initializable {
         clearButton.setDisable(spreadsheetTable.getSelectionModel().getSelectedCells().isEmpty());
     }
 
+    // ساخت شیت جدید با گرفتن مقدار از کاربر
     @FXML
     private void createNewSpreadsheet() {
         try {
@@ -370,14 +387,15 @@ public class SpreadsheetGUIController implements Initializable {
         statsStage.show();
     }
 
+    // دربارهٔ برنامه
     @FXML
     private void showAbout() {
         showAlert("About",
-                "Excel Spreadsheet Simulator\n" +
-                        "Version 1.0\n" +
+                "Excel Spreadsheet \n" +
+                        "Version 2025\n" +
                         "Built with JavaFX\n" +
                         "Dimensions: " + spreadsheet.getRows() + "x" + spreadsheet.getCols() + "\n" +
-                        "© 2024 Excel Team",
+                        "©Mahdis",
                 Alert.AlertType.INFORMATION);
     }
 
@@ -406,7 +424,7 @@ public class SpreadsheetGUIController implements Initializable {
         • Constants: PI, E
         
         AUTO FILL:
-        • FILL A1 A1:C1  - Copy A1 to B1, C1
+        • FILL (A1, A1:C1)  - Copy A1 to B1, C1
         
         CURRENT GRID: """ + spreadsheet.getRows() + " rows x " + spreadsheet.getCols() + " columns";
 
@@ -463,6 +481,7 @@ public class SpreadsheetGUIController implements Initializable {
         alert.showAndWait();
     }
 
+    // کلاس داخلی برای استایل براساس نوع/خطا
     private class SpreadsheetTableCell extends TableCell<ObservableList<String>, String> {
         private final int columnIndex;
 
@@ -503,7 +522,6 @@ public class SpreadsheetGUIController implements Initializable {
                 setStyle("-fx-background-color: white; -fx-text-fill: black; -fx-alignment: center;");
             }
 
-            // Border
             setStyle(getStyle() + " -fx-border-color: lightgray; -fx-border-width: 0.5;");
         }
     }

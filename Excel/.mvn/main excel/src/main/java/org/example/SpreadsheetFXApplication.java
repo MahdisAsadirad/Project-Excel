@@ -28,7 +28,6 @@ public class SpreadsheetFXApplication extends Application {
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/SpreadsheetGUI.fxml"));
         loader.setControllerFactory(param -> new SpreadsheetGUIController(spreadsheet, commandProcessor));
-
         Parent root = loader.load();
 
         primaryStage.setTitle("Excel Spreadsheet(" + cols + "x" + rows + ")");
@@ -53,11 +52,11 @@ public class SpreadsheetFXApplication extends Application {
                     return value;
                 } else {
                     showErrorDialog("Invalid dimension! Please enter a number between 1 and 26.");
-                    return getGridDimension(message, defaultValue);
+                    return getGridDimension(message, defaultValue); // تلاش مجدد
                 }
             } catch (NumberFormatException e) {
                 showErrorDialog("Invalid number format! Please enter a valid integer.");
-                return getGridDimension(message, defaultValue);
+                return getGridDimension(message, defaultValue); // تلاش مجدد
             }
         } else {
             System.exit(0);

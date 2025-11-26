@@ -2,156 +2,46 @@ package org.example.view;
 
 import org.example.controller.AutoFillManager;
 import org.example.controller.DependencyManager;
-import org.example.controller.FormulaEvaluator;
 import org.example.model.Spreadsheet;
-import java.util.List;
-import java.util.Scanner;
 public class CommandProcessor {
     private Spreadsheet spreadsheet;
     private final SpreadsheetView view;
     private final DependencyManager dependencyManager;
     private final AutoFillManager autoFillManager;
-    private final FormulaEvaluator formulaEvaluator;
-    private final Scanner scanner;
 
     public CommandProcessor(Spreadsheet spreadsheet) {
         this.spreadsheet = spreadsheet;
         this.view = new SpreadsheetView(spreadsheet);
         this.dependencyManager = new DependencyManager(spreadsheet);
         this.autoFillManager = new AutoFillManager(spreadsheet);
-        this.formulaEvaluator = new FormulaEvaluator(spreadsheet);
-        this.scanner = new Scanner(System.in);
     }
 
-    public void startInteractiveMode() {
-        System.out.println("*.*.* Spreadsheet *.*.*");
-        System.out.println("Type 'HELP' for available commands.");
-
-        boolean running = true;
-        while (running) {
-            try {
-                System.out.print("\n> ");
-                String inputLine = scanner.nextLine().trim();
-
-                if (inputLine.isEmpty()) {
-                    continue;
-                }
-
-                // تقسیم خط ورودی به دستورات مجزا (با ; یا خطوط جدید)
-                String[] commands = inputLine.split(";|\\n");
-
-                for (String command : commands) {
-                    command = command.trim();
-                    if (!command.isEmpty()) {
-                        boolean continueRunning = processSingleCommand(command);
-                        if (!continueRunning) {
-                            running = false;
-                            break;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
-            }
-        }
-
-        scanner.close();
-    }
-
-    // نسخه اصلاح‌شده processSingleCommand
-    private boolean processSingleCommand(String command) {
-        String upperCommand = command.toUpperCase().trim();
-
-        // Undo / Redo
-        if ("U".equalsIgnoreCase(command) || "CTRL+Z".equalsIgnoreCase(command)) {
-            processUndoCommand();
-            return true;
-        } else if ("R".equalsIgnoreCase(command) || "CTRL+Y".equalsIgnoreCase(command)) {
-            processRedoCommand();
-            return true;
-        }
-
-        // SET یا انتساب مستقیم
-        if (upperCommand.startsWith("SET ")) {
-            processSetCommand(command);
-            return true;
-        }
-        if (command.matches("^[A-Za-z]+\\d+\\s*=\\s*[^=].*")) {
-            processDirectAssignment(command);
-            return true;
-        }
-
-        // دستورات اصلی
-        if (upperCommand.startsWith("CLEAR")) {  // ← اینجا تغییر اصلی
-            processClearCommand(command);
-            return true;
-        } else if (upperCommand.startsWith("FILL ")) {
-            processFillCommand(command);
-            return true;
-        } else if (upperCommand.startsWith("DETAIL ")) {
-            processDetailCommand(command);
-            return true;
-        }
-
-        switch (upperCommand) {
-            case "EXIT":
-            case "QUIT":
-                System.out.println("Goodbye!");
-                return false;
-            case "HELP":
-                displayHelp();
-                break;
-            case "SHOW":
-                view.displaySpreadsheet();
-                break;
-            case "STATS":
-                view.displayGridStatistics();
-                break;
-            case "ERRORS":
-                view.displayErrors();
-                break;
-            case "RECALC":
-                processRecalcCommand();
-                break;
-            case "HISTORY":
-                processHistoryCommand();
-                break;
-            case "CLEARHISTORY":
-                processClearHistoryCommand();
-                break;
-            case "REDO":
-                processRedoCommand();
-                break;
-            default:
-                System.out.println("Unknown command: " + command);
-                System.out.println("Type 'HELP' for available commands.");
-        }
-
-        return true;
-    }
-
-    // نسخه اصلاح‌شده processCommand (GUI)
     public boolean processCommand(String command) {
         String upperCommand = command.toUpperCase().trim();
 
-        if (upperCommand.startsWith("SET ")) {
-            processSetCommand(command);
+        if (command.matches("^[A-Za-z]+\\d+\\s*=.*")) {
+            processSet(command);
             return true;
         }
+
         if (command.matches("^[A-Za-z]+\\d+\\s*=\\s*[^=].*")) {
-            processDirectAssignment(command);
+            processSet(command);
             return true;
         }
-        if (upperCommand.startsWith("CLEAR")) {  // ← تغییر اصلی
+        if (upperCommand.startsWith("CLEAR")) {
             processClearCommand(command);
             return true;
-        } else if (upperCommand.startsWith("FILL ")) {
+        }
+
+        else if (upperCommand.startsWith("FILL")) {
             processFillCommand(command);
             return true;
-        } else if (upperCommand.startsWith("DETAIL ")) {
+        }
+        else if (upperCommand.startsWith("DETAIL ")) {
             processDetailCommand(command);
             return true;
         }
+
 
         switch (upperCommand) {
             case "QUIT":
@@ -164,7 +54,7 @@ public class CommandProcessor {
                 view.displaySpreadsheet();
                 break;
             case "STATS":
-                view.displayGridStatistics();
+                System.out.println(view.displayGridStatistics());
                 break;
             case "ERRORS":
                 view.displayErrors();
@@ -180,54 +70,7 @@ public class CommandProcessor {
     }
 
 
-    private void processUndoCommand() {
-        try {
-            if (spreadsheet.undo()) {
-                System.out.println("Undo completed successfully.");
-                view.displaySpreadsheet();
-            } else {
-                System.out.println("Cannot undo - no more actions available.");
-                System.out.println(spreadsheet.getHistoryInfo());
-            }
-        } catch (Exception e) {
-            System.out.println("Error during undo: " + e.getMessage());
-        }
-    }
-
-    private void processRedoCommand() {
-        try {
-            if (spreadsheet.redo()) {
-                System.out.println("Redo completed successfully.");
-                view.displaySpreadsheet();
-            } else {
-                System.out.println("Cannot redo - no actions to redo.");
-                System.out.println(spreadsheet.getHistoryInfo());
-            }
-        } catch (Exception e) {
-            System.out.println("Error during redo: " + e.getMessage());
-        }
-    }
-
-    private void processHistoryCommand() {
-        System.out.println("\n=== UNDO/REDO HISTORY ===");
-        System.out.println(spreadsheet.getHistoryInfo());
-
-        if (spreadsheet.canUndo()) {
-            System.out.println("Use 'UNDO' to revert last action");
-        }
-        if (spreadsheet.canRedo()) {
-            System.out.println("Use 'REDO' to restore undone action");
-        }
-    }
-
-    private void processClearHistoryCommand() {
-        spreadsheet.clearHistory();
-        System.out.println("History cleared successfully.");
-        System.out.println(spreadsheet.getHistoryInfo());
-    }
-
-
-    private void processDirectAssignment(String command) {
+    private void processSet(String command) {
         int firstEquals = command.indexOf('=');
         if (firstEquals == -1) {
             System.out.println("Invalid assignment format.");
@@ -237,29 +80,29 @@ public class CommandProcessor {
         String cellRef = command.substring(0, firstEquals).trim().toUpperCase();
         String value = command.substring(firstEquals + 1).trim();
 
-        System.out.println("DEBUG: Setting " + cellRef + " to: '" + value + "'");
-
         if (!spreadsheet.isValidCellReference(cellRef)) {
             System.out.println("Invalid cell reference: " + cellRef);
             return;
         }
 
         try {
-            String processedValue = preprocessValue(cellRef, value);
+            if (value.isEmpty()) {
+                spreadsheet.setCellContent(cellRef, "");
+            } else {
+                spreadsheet.setCellContent(cellRef, preprocessValue(value));
+            }
 
-            System.out.println("DEBUG: Processed value: '" + processedValue + "'");
-
-            spreadsheet.setCellContent(cellRef, processedValue);
             dependencyManager.recalculateDependencies(cellRef);
             System.out.println("Cell " + cellRef + " set successfully.");
             view.displaySpreadsheet();
+
         } catch (Exception e) {
             System.out.println("Error setting cell " + cellRef + ": " + e.getMessage());
             view.displaySpreadsheet();
         }
     }
 
-    private String preprocessValue(String cellRef, String value) {
+    private String preprocessValue(String value) {
         if (value == null || value.trim().isEmpty()) {
             return value;
         }
@@ -295,7 +138,6 @@ public class CommandProcessor {
             Double.parseDouble(trimmed);
             return trimmed;
         } catch (NumberFormatException e) { }
-
         return trimmed;
     }
 
@@ -314,7 +156,6 @@ public class CommandProcessor {
             return false;
         }
 
-        // اگر متن درون کوتیشن است، فرمول نیست
         if ((value.startsWith("\"") && value.endsWith("\"")) ||
                 (value.startsWith("”") && value.endsWith("”"))) {
             return false;
@@ -325,7 +166,7 @@ public class CommandProcessor {
             Double.parseDouble(value);
             return false;
         } catch (NumberFormatException e) {
-            // ادامه بررسی
+            System.out.println(e.getMessage());
         }
 
         // بررسی کن آیا حاوی عملگرهای ریاضی است
@@ -362,7 +203,7 @@ public class CommandProcessor {
     private void displayHelp() {
         System.out.println("\n=== AVAILABLE COMMANDS ===");
         System.out.println("<cell>=<value>         - Set cell content (e.g., A1=5, B1=\"Hello\", C1=A1+B1)");
-        System.out.println("FILL <src> <range>     - AutoFill from source cell to target range (e.g., FILL A1 A1:C1)");
+        System.out.println("FILL (<src>, <range>)     - AutoFill from source cell to target range (e.g., FILL (A1, A1:C1))");
         System.out.println("SHOW                   - Display the spreadsheet");
         System.out.println("DETAIL <cell>          - Show detailed information about a cell");
         System.out.println("STATS                  - Display grid statistics");
@@ -377,53 +218,18 @@ public class CommandProcessor {
         System.out.println("EXIT/QUIT              - Exit the program");
     }
 
-    private void processSetCommand(String command) {
-        String assignment = command.substring(4).trim();
-        int equalsIndex = assignment.indexOf('=');
-
-        if (equalsIndex == -1) {
-            System.out.println("Invalid SET command format. Use: SET <cell>=<value>");
-            return;
-        }
-
-        String cellReference = assignment.substring(0, equalsIndex).trim().toUpperCase();
-        String value = assignment.substring(equalsIndex + 1).trim();
-
-        if (!spreadsheet.isValidCellReference(cellReference)) {
-            System.out.println("Invalid cell reference: " + cellReference);
-            return;
-        }
-
-        try {
-            // استفاده از preprocessValue برای SET هم
-            String processedValue = preprocessValue(cellReference, value);
-            // اعتبارسنجی اولیه مقدار
-            if (processedValue.startsWith("\"") && !processedValue.endsWith("\"")) {
-                throw new IllegalArgumentException("Unclosed double quotes in text value");
-            }
-
-            if (processedValue.startsWith("=") && processedValue.length() == 1) {
-                throw new IllegalArgumentException("Formula cannot be empty");
-            }
-
-            spreadsheet.setCellContent(cellReference, processedValue);
-            dependencyManager.recalculateDependencies(cellReference);
-
-            System.out.println("Cell " + cellReference + " set successfully.");
-            view.displaySpreadsheet();
-
-        } catch (Exception e) {
-            System.out.println("Error setting cell " + cellReference + ": " + e.getMessage());
-            view.displaySpreadsheet();
-        }
-    }
-
     private void processFillCommand(String command) {
-        String fillArgs = command.substring(5).trim();
-        String[] parts = fillArgs.split("\\s+", 2);
+        // حذف "FILL" با یا بدون فاصله
+        String fillArgs = command.substring(4).trim();
+        if (fillArgs.startsWith("(") && fillArgs.endsWith(")")) {
+            fillArgs = fillArgs.substring(1, fillArgs.length() - 1); // حذف پرانتزها
+        }
+
+        // جدا کردن با کاما
+        String[] parts = fillArgs.split("\\s*,\\s*");
 
         if (parts.length != 2) {
-            System.out.println("Invalid FILL command format. Use: FILL <source> <range>");
+            System.out.println("Invalid FILL command format. Use: FILL(<source>, <range>)");
             return;
         }
 
@@ -442,6 +248,8 @@ public class CommandProcessor {
         }
     }
 
+
+
     private void processDetailCommand(String command) {
         String cellReference = command.substring(6).trim().toUpperCase();
         view.displayCellDetails(cellReference);
@@ -455,7 +263,6 @@ public class CommandProcessor {
             System.out.println("All cells cleared.");
             view.displaySpreadsheet();
         } else {
-            // پاک کردن سلول خاص
             try {
                 spreadsheet.setCellContent(clearArgs, "");
                 dependencyManager.recalculateDependencies(clearArgs);
@@ -474,17 +281,6 @@ public class CommandProcessor {
             view.displaySpreadsheet();
         } catch (Exception e) {
             System.out.println("Error during recalculation: " + e.getMessage());
-        }
-    }
-
-    public void processBatchCommands(List<String> commands) {
-        for (String command : commands) {
-            System.out.println("\n>>> " + command);
-            try {
-                processCommand(command);
-            } catch (Exception e) {
-                System.out.println("Error executing command: " + e.getMessage());
-            }
         }
     }
 

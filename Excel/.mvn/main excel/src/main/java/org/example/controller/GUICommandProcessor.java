@@ -10,11 +10,6 @@ public class GUICommandProcessor extends CommandProcessor {
     }
 
     @Override
-    public void startInteractiveMode() {
-        System.out.println("GUI Mode Activated");
-    }
-
-    @Override
     public boolean processCommand(String command) {
         try {
             return super.processCommand(command);
