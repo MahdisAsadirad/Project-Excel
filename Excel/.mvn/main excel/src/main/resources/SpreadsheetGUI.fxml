@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.example.view.SpreadsheetGUIController" spacing="10"
+      style="-fx-padding: 10;">
+
+    <MenuBar>
+        <Menu text="File">
+            <MenuItem text="New" onAction="#createNewSpreadsheet"/>
+            <SeparatorMenuItem/>
+            <MenuItem text="Exit" onAction="#exitApplication"/>
+        </Menu>
+        <Menu text="Edit">
+            <MenuItem text="Undo" onAction="#undo"/>
+            <MenuItem text="Redo" onAction="#redo"/>
+            <SeparatorMenuItem/>
+            <MenuItem text="Clear Selection" onAction="#clearSelectedCell"/>
+        </Menu>
+        <Menu text="View">
+            <MenuItem text="Refresh" onAction="#refreshTable"/>
+            <MenuItem text="Show Statistics" onAction="#showStatistics"/>
+        </Menu>
+        <Menu text="Help">
+            <MenuItem text="Show Help" onAction="#showHelp"/>
+            <SeparatorMenuItem/>
+            <MenuItem text="About" onAction="#showAbout"/>
+        </Menu>
+    </MenuBar>
+
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="Command:"/>
+        <TextField fx:id="commandField" prefWidth="400" onAction="#executeCommand"/>
+        <Button text="Execute" fx:id="executeButton" onAction="#executeCommand"/>
+    </HBox>
+
+    <HBox spacing="5" alignment="CENTER_LEFT">
+        <Button text="Undo (Ctrl+Z)" fx:id="undoButton" onAction="#undo"/>
+        <Button text="Redo (Ctrl+Y)" fx:id="redoButton" onAction="#redo"/>
+        <Button text="Clear Cell" fx:id="clearButton" onAction="#clearSelectedCell"/>
+        <Region prefWidth="20"/>
+        <Button text="SUM" onAction="#insertSumFormula"/>
+        <Button text="AVG" onAction="#insertAvgFormula"/>
+        <Button text="Insert Formula" onAction="#insertFormula"/>
+    </HBox>
+
+    <TableView fx:id="spreadsheetTable" VBox.vgrow="ALWAYS">
+        <columns>
+        </columns>
+    </TableView>
+
+    <VBox spacing="5">
+        <Label text="Output And Messages"/>
+        <TextArea fx:id="outputArea" prefRowCount="8" editable="false"
+                  style="-fx-font-family: monospace; -fx-background-color: #f0f0f0;"/>
+    </VBox>
+
+</VBox>
