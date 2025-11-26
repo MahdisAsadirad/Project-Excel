@@ -58,52 +58,110 @@ public class CommandProcessor {
         scanner.close();
     }
 
+    // نسخه اصلاح‌شده processSingleCommand
     private boolean processSingleCommand(String command) {
         String upperCommand = command.toUpperCase().trim();
 
-        if ("U".equalsIgnoreCase(command) || "Ctrl+z".equalsIgnoreCase(command)) {
+        // Undo / Redo
+        if ("U".equalsIgnoreCase(command) || "CTRL+Z".equalsIgnoreCase(command)) {
             processUndoCommand();
             return true;
-        } else if ("R".equalsIgnoreCase(command) || "ctrl+y".equalsIgnoreCase(command)) {
+        } else if ("R".equalsIgnoreCase(command) || "CTRL+Y".equalsIgnoreCase(command)) {
             processRedoCommand();
             return true;
         }
 
+        // SET یا انتساب مستقیم
         if (upperCommand.startsWith("SET ")) {
             processSetCommand(command);
             return true;
         }
-
         if (command.matches("^[A-Za-z]+\\d+\\s*=\\s*[^=].*")) {
             processDirectAssignment(command);
             return true;
         }
 
-        switch (upperCommand) {
+        // دستورات اصلی
+        if (upperCommand.startsWith("CLEAR")) {  // ← اینجا تغییر اصلی
+            processClearCommand(command);
+            return true;
+        } else if (upperCommand.startsWith("FILL ")) {
+            processFillCommand(command);
+            return true;
+        } else if (upperCommand.startsWith("DETAIL ")) {
+            processDetailCommand(command);
+            return true;
+        }
 
+        switch (upperCommand) {
             case "EXIT":
+            case "QUIT":
                 System.out.println("Goodbye!");
                 return false;
-            case "Ctrl+z":
-                processUndoCommand();
-                return true;
-            case "REDO":
-                processRedoCommand();
-                return true;
-            case "HISTORY":
-                processHistoryCommand();
-                return true;
-            case "CLEARHISTORY":
-                processClearHistoryCommand();
-                return true;
             case "HELP":
                 displayHelp();
                 break;
             case "SHOW":
                 view.displaySpreadsheet();
                 break;
-            case "CLEAR":
-                processClearCommand(command);
+            case "STATS":
+                view.displayGridStatistics();
+                break;
+            case "ERRORS":
+                view.displayErrors();
+                break;
+            case "RECALC":
+                processRecalcCommand();
+                break;
+            case "HISTORY":
+                processHistoryCommand();
+                break;
+            case "CLEARHISTORY":
+                processClearHistoryCommand();
+                break;
+            case "REDO":
+                processRedoCommand();
+                break;
+            default:
+                System.out.println("Unknown command: " + command);
+                System.out.println("Type 'HELP' for available commands.");
+        }
+
+        return true;
+    }
+
+    // نسخه اصلاح‌شده processCommand (GUI)
+    public boolean processCommand(String command) {
+        String upperCommand = command.toUpperCase().trim();
+
+        if (upperCommand.startsWith("SET ")) {
+            processSetCommand(command);
+            return true;
+        }
+        if (command.matches("^[A-Za-z]+\\d+\\s*=\\s*[^=].*")) {
+            processDirectAssignment(command);
+            return true;
+        }
+        if (upperCommand.startsWith("CLEAR")) {  // ← تغییر اصلی
+            processClearCommand(command);
+            return true;
+        } else if (upperCommand.startsWith("FILL ")) {
+            processFillCommand(command);
+            return true;
+        } else if (upperCommand.startsWith("DETAIL ")) {
+            processDetailCommand(command);
+            return true;
+        }
+
+        switch (upperCommand) {
+            case "QUIT":
+                System.out.println("Goodbye!");
+                return false;
+            case "HELP":
+                displayHelp();
+                break;
+            case "SHOW":
+                view.displaySpreadsheet();
                 break;
             case "STATS":
                 view.displayGridStatistics();
@@ -115,18 +173,12 @@ public class CommandProcessor {
                 processRecalcCommand();
                 break;
             default:
-                if (upperCommand.startsWith("FILL ")) {
-                    processFillCommand(command);
-                } else if (upperCommand.startsWith("DETAIL ")) {
-                    processDetailCommand(command);
-                } else {
-                    System.out.println("Unknown command: " + command);
-                    System.out.println("Type 'HELP' for available commands.");
-                }
+                System.out.println("Unknown command. Type 'HELP' for available commands.");
         }
 
         return true;
     }
+
 
     private void processUndoCommand() {
         try {
@@ -174,56 +226,6 @@ public class CommandProcessor {
         System.out.println(spreadsheet.getHistoryInfo());
     }
 
-    public boolean processCommand(String command) {
-        String upperCommand = command.toUpperCase().trim();
-
-        // --- تشخیص دستور SET صریح ---
-        if (upperCommand.startsWith("SET ")) {
-            processSetCommand(command);
-            return true;
-        }
-
-        // --- تشخیص انتساب مستقیم مانند A1=10 ---
-        if (command.matches("^[A-Za-z]+\\d+\\s*=\\s*[^=].*")) {
-            processDirectAssignment(command);
-            return true;
-        }
-
-        // سایر دستورات...
-        switch (upperCommand) {
-            case "QUIT":
-                System.out.println("Goodbye!");
-                return false;
-            case "HELP":
-                displayHelp();
-                break;
-            case "SHOW":
-                view.displaySpreadsheet();
-                break;
-            case "CLEAR":
-                processClearCommand(command);
-                break;
-            case "STATS":
-                view.displayGridStatistics();
-                break;
-            case "ERRORS":
-                view.displayErrors();
-                break;
-            case "RECALC":
-                processRecalcCommand();
-                break;
-            case "FILL":
-                processFillCommand(command);
-                break;
-            case "DETAIL":
-                processDetailCommand(command);
-                break;
-            default:
-                System.out.println("Unknown command. Type 'HELP' for available commands.");
-        }
-
-        return true;
-    }
 
     private void processDirectAssignment(String command) {
         int firstEquals = command.indexOf('=');

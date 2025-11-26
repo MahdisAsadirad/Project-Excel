@@ -3,6 +3,7 @@ package org.example.view;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.example.model.Cell;
+import org.example.model.CellType;
 import org.example.model.Spreadsheet;
 import org.example.utils.CellReferenceConverter;
 import javafx.beans.property.SimpleStringProperty;
@@ -14,7 +15,6 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
-import javafx.util.Callback;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -69,16 +69,7 @@ public class SpreadsheetGUIController implements Initializable {
                 return new SimpleStringProperty(row.get(columnIndex));
             });
 
-            column.setCellFactory(new Callback<TableColumn<ObservableList<String>, String>,
-                    TableCell<ObservableList<String>, String>>() {
-
-                @Override
-                public TableCell<ObservableList<String>, String> call(
-                        TableColumn<ObservableList<String>, String> param) {
-
-                    return new SpreadsheetTableCell(columnIndex);
-                }
-            });
+            column.setCellFactory(_ -> new SpreadsheetTableCell(columnIndex));
 
             column.setPrefWidth(100);
             column.setResizable(true);
@@ -498,11 +489,11 @@ public class SpreadsheetGUIController implements Initializable {
 
                 if (cell.hasError()) {
                     setStyle("-fx-background-color: #ffc8c8; -fx-text-fill: red; -fx-alignment: center;");
-                } else if (cell.getCellType() == org.example.model.CellType.FORMULA) {
+                } else if (cell.getCellType() == CellType.FORMULA) {
                     setStyle("-fx-background-color: #dcf0ff; -fx-text-fill: blue; -fx-alignment: center;");
-                } else if (cell.getCellType() == org.example.model.CellType.TEXT) {
+                } else if (cell.getCellType() == CellType.TEXT) {
                     setStyle("-fx-background-color: #ffffdc; -fx-text-fill: black; -fx-alignment: center;");
-                } else if (cell.getCellType() == org.example.model.CellType.NUMBER) {
+                } else if (cell.getCellType() == CellType.NUMBER) {
                     setStyle("-fx-background-color: #dcffdc; -fx-text-fill: black; -fx-alignment: center;");
                 } else {
                     setStyle("-fx-background-color: white; -fx-text-fill: black; -fx-alignment: center;");
