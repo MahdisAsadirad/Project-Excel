@@ -39,18 +39,9 @@ public class CellState implements Serializable {
             ObjectInputStream ois = new ObjectInputStream(bais);
             return ois.readObject();
         } catch (Exception e) {
-            // اگر serialization ممکن نبود، مقدار اصلی را برمی‌گردانیم
             return value;
         }
     }
-
-    // Getter methods
-    public String getRawContent() { return rawContent; }
-    public Object getComputedValue() { return computedValue; }
-    public CellType getCellType() { return cellType; }
-    public Set<String> getDependencies() { return new HashSet<>(dependencies); }
-    public ErrorType getErrorType() { return errorType; }
-    public String getErrorMessage() { return errorMessage; }
 
     public void applyToCell(Cell cell) {
         cell.setRawContent(this.rawContent);

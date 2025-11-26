@@ -25,31 +25,11 @@ public class SpreadsheetState implements Serializable {
         return cellStates.get(cellReference);
     }
 
-    public Map<String, CellState> getAllCellStates() {
-        return new HashMap<>(cellStates);
-    }
-
     public int getRows() { return rows; }
     public int getCols() { return cols; }
     public long getTimestamp() { return timestamp; }
 
     public boolean isEmpty() {
         return cellStates.isEmpty();
-    }
-
-    // Deep copy implementation
-    public SpreadsheetState deepCopy() {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(this);
-            oos.close();
-
-            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-            ObjectInputStream ois = new ObjectInputStream(bais);
-            return (SpreadsheetState) ois.readObject();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to deep copy SpreadsheetState", e);
-        }
     }
 }

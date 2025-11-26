@@ -34,7 +34,6 @@ public class Queue<T> {
         size++;
     }
 
-    @SuppressWarnings("unchecked")
     public T dequeue() {
         if (isEmpty()) {
             throw new NoSuchElementException("Queue is empty");
@@ -44,14 +43,6 @@ public class Queue<T> {
         head = (head + 1) % capacity;
         size--;
         return element;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T peek() {
-        if (isEmpty()) {
-            throw new NoSuchElementException("Queue is empty");
-        }
-        return (T) elements[head];
     }
 
     public boolean isEmpty() {
@@ -66,32 +57,4 @@ public class Queue<T> {
         return size;
     }
 
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public void clear() {
-        for (int i = 0; i < capacity; i++) {
-            elements[i] = null;
-        }
-        head = 0;
-        tail = -1;
-        size = 0;
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Queue[");
-        int current = head;
-        for (int i = 0; i < size; i++) {
-            sb.append(elements[current]);
-            if (i < size - 1) {
-                sb.append(", ");
-            }
-            current = (current + 1) % capacity;
-        }
-        sb.append("]");
-        return sb.toString();
-    }
 }

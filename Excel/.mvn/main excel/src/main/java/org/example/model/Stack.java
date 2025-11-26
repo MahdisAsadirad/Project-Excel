@@ -31,7 +31,6 @@ public class Stack<T> {
         size++;
     }
 
-    @SuppressWarnings("unchecked")
     public T pop() {
         if (isEmpty()) {
             throw new EmptyStackException();
@@ -42,7 +41,6 @@ public class Stack<T> {
         return element;
     }
 
-    @SuppressWarnings("unchecked")
     public T peek() {
         if (isEmpty()) {
             throw new EmptyStackException();
@@ -62,29 +60,11 @@ public class Stack<T> {
         return size;
     }
 
-    public int getCapacity() {
-        return capacity;
-    }
-
     public void clear() {
         for (int i = 0; i <= top; i++) {
             elements[i] = null;
         }
         top = -1;
         size = 0;
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Stack[");
-        for (int i = 0; i <= top; i++) {
-            sb.append(elements[i]);
-            if (i < top) {
-                sb.append(", ");
-            }
-        }
-        sb.append("]");
-        return sb.toString();
     }
 }

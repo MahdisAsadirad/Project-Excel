@@ -15,7 +15,6 @@ public class Spreadsheet {
     private final Map<String, Set<String>> dependencyGraph;
     private final int rows;
     private final int cols;
-    private final Set<String> calculationInProgress;
     private final HistoryManager historyManager;
 
     public Spreadsheet(int rows, int cols) {
@@ -23,7 +22,6 @@ public class Spreadsheet {
         this.cols = cols;
         this.grid = new CellArray(rows, cols);
         this.dependencyGraph = new HashMap<>();
-        this.calculationInProgress = new HashSet<>();
         this.historyManager = new HistoryManager();
         initializeDependencyGraph();
         historyManager.saveState(this);
@@ -36,10 +34,6 @@ public class Spreadsheet {
                 dependencyGraph.put(cellRef, new HashSet<>());
             }
         }
-    }
-
-    public void saveState() {
-        historyManager.saveState(this);
     }
 
     public boolean undo() {
@@ -65,11 +59,6 @@ public class Spreadsheet {
     public boolean canRedo() {
         return historyManager.canRedo();
     }
-
-    public String getHistoryInfo() {
-        return historyManager.getHistoryInfo();
-    }
-
 
     public Cell getCell(int row, int col) {
         return grid.getCell(row, col);
@@ -140,35 +129,19 @@ public class Spreadsheet {
         }
     }
 
-    public void clearHistory() {
-        historyManager.clear();
-    }
-
-    public void enableHistoryRecording() {
-        historyManager.setRecording(true);
-    }
-
-    public void disableHistoryRecording() {
-        historyManager.setRecording(false);
-    }
-
     private void processFormula(Cell cell, String formula, String currentCellRef) {
         try {
-            System.out.println("DEBUG: Processing formula: " + formula + " for cell: " + currentCellRef);
-
             Validationformula.validateFormula(formula);
 
             // استخراج وابستگی‌ها از فرمول (شامل سلول‌ها در توابع تجمعی)
             Set<String> dependencies = ExpressionParser.extractCellReferences(formula);
             cell.setDependencies(dependencies);
 
-            System.out.println("DEBUG: Dependencies found: " + dependencies);
-
             // اضافه کردن وابستگی‌ها به گراف
             for (String dependency : dependencies) {
                 validateCellReference(dependency);
                 if (dependency.equals(currentCellRef)) {
-                    throw new CircularDependencyException("Self-reference detected in " + currentCellRef);
+                    throw new CircularDependencyException(currentCellRef);
                 }
                 addDependency(dependency, currentCellRef);
             }
@@ -182,7 +155,6 @@ public class Spreadsheet {
             calculateFormulaValue(cell, formula, currentCellRef);
 
         } catch (Exception e) {
-            System.out.println("DEBUG: Formula processing failed: " + e.getMessage());
             cell.setErrorType(ErrorType.INVALID_FORMULA);
             cell.setErrorMessage(e.getMessage());
             propagateError(currentCellRef);
@@ -323,10 +295,6 @@ public class Spreadsheet {
         return CellConverter.toCellReference(row, col);
     }
 
-    public static int[] fromCellReference(String cellReference) {
-        return CellConverter.fromCellReference(cellReference);
-    }
-
     public int getRows() {
         return rows;
     }
@@ -339,52 +307,6 @@ public class Spreadsheet {
         grid.clear();
         dependencyGraph.clear();
         initializeDependencyGraph();
-    }
-
-    public void displayGrid() {
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                System.out.print(grid.getCell(i, j).toString());
-                if (j < cols - 1) {
-                    System.out.print(", ");
-                }
-            }
-            System.out.println();
-        }
-    }
-
-    public String getGridAsString() {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                sb.append(grid.getCell(i, j).toString());
-                if (j < cols - 1) {
-                    sb.append(", ");
-                }
-            }
-            if (i < rows - 1) {
-                sb.append("\n");
-            }
-        }
-        return sb.toString();
-    }
-
-    public void debugCellContent(String cellReference) {
-        Cell cell = getCell(cellReference);
-        System.out.println("DEBUG " + cellReference + ":");
-        System.out.println("  Raw: '" + cell.getRawContent() + "'");
-        System.out.println("  Type: " + cell.getCellType());
-        System.out.println("  IsFormula: " + Validationformula.isFormula(cell.getRawContent()));
-        System.out.println("  Computed: " + cell.getComputedValue());
-        System.out.println("  HasError: " + cell.hasError());
-        if (cell.hasError()) {
-            System.out.println("  Error: " + cell.getErrorMessage());
-        }
-    }
-
-    public void cleanup() {
-        dependencyGraph.clear();
-        calculationInProgress.clear();
     }
 
     public Map<ErrorType, List<String>> getErrorReport() {
