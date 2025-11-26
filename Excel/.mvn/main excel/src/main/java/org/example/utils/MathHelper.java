@@ -30,20 +30,23 @@ public class MathHelper {
         }
     }
 
-    // متد جدید برای اعمال عملگرهای unary و postfix
     public static double applyUnaryOrPostfixOperator(String operator, double operand) {
-        if (operator.equals("u+")) {
-            return +operand;
-        } else if (operator.equals("u-")) {
-            return -operand;
-        } else if (operator.equals("!")) {
-            return factorial(operand);
-        } else {
-            throw new IllegalArgumentException("Unknown unary/postfix operator: " + operator);
+        switch (operator) {
+            case "U+":
+                return +operand;
+            case "U-":
+                return -operand;
+            case "!":
+                return factorial(operand);
+            default:
+                throw new IllegalArgumentException("Unknown unary/postfix operator: " + operator);
         }
     }
 
-    // محاسبه فاکتوریل
+    public static boolean isUnaryOrPostfixOperator(String token) {
+        return "U+".equals(token) || "U-".equals(token) || "!".equals(token);
+    }
+
     public static double factorial(double n) {
         if (n < 0) {
             throw new InvalidFactorialException("Factorial is not defined for negative numbers: " + n);
@@ -51,17 +54,11 @@ public class MathHelper {
         if (n != Math.floor(n)) {
             throw new InvalidFactorialException("Factorial is only defined for integers: " + n);
         }
-        if (n > 170) { // محدودیت double
-            throw new InvalidFactorialException("Factorial value too large for double precision: " + n);
-        }
 
         int intN = (int) n;
         double result = 1;
         for (int i = 2; i <= intN; i++) {
             result *= i;
-            if (Double.isInfinite(result)) {
-                throw new InvalidFactorialException("Factorial value exceeds maximum double value at: " + i);
-            }
         }
         return result;
     }
@@ -74,13 +71,6 @@ public class MathHelper {
             throw new InvalidExponentiationException("Negative base with fractional exponent");
         }
         return Math.pow(base, exponent);
-    }
-
-    public static double squareRoot(double value) {
-        if (value < 0) {
-            throw new InvalidSquareRootException("Square root is not defined for negative numbers: " + value);
-        }
-        return Math.sqrt(value);
     }
 
     public static boolean isConstant(String token) {
@@ -139,13 +129,5 @@ public class MathHelper {
             }
             return formatted;
         }
-    }
-
-    public static boolean isUnaryOrPostfixOperator(String token) {
-        return "u+".equals(token) || "u-".equals(token) || "!".equals(token);
-    }
-
-    public static boolean isPostfixOperator(String token) {
-        return "!".equals(token);
     }
 }

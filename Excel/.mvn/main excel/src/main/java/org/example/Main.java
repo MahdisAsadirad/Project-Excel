@@ -8,15 +8,15 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.TextInputDialog;
 import javafx.stage.Stage;
 import org.example.model.Spreadsheet;
-import org.example.view.CommandProcessor;
-import org.example.view.SpreadsheetGUIController;
+import org.example.view.Command;
+import org.example.controller.SpreadsheetGUIController;
 
 import java.util.Optional;
 
-public class SpreadsheetFXApplication extends Application {
+public class Main extends Application {
 
     private Spreadsheet spreadsheet;
-    private CommandProcessor commandProcessor;
+    private Command commandProcessor;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -24,7 +24,7 @@ public class SpreadsheetFXApplication extends Application {
         int rows = getGridDimension("Enter number of rows:", "0");
 
         this.spreadsheet = new Spreadsheet(rows, cols);
-        this.commandProcessor = new CommandProcessor(spreadsheet);
+        this.commandProcessor = new Command(spreadsheet);
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/SpreadsheetGUI.fxml"));
         loader.setControllerFactory(param -> new SpreadsheetGUIController(spreadsheet, commandProcessor));

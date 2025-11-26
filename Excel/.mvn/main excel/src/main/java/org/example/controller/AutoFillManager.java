@@ -3,7 +3,7 @@ package org.example.controller;
 import org.example.model.Cell;
 import org.example.model.CellType;
 import org.example.model.Spreadsheet;
-import org.example.utils.CellReferenceConverter;
+import org.example.utils.CellConverter;
 
 import java.util.regex.Pattern;
 
@@ -18,7 +18,7 @@ public class AutoFillManager {
     public void autoFill(String sourceCell, String targetRange) {
         validateParameters(sourceCell, targetRange);
 
-        int[] sourceCoords = CellReferenceConverter.fromCellReference(sourceCell);
+        int[] sourceCoords = CellConverter.fromCellReference(sourceCell);
         Cell source = spreadsheet.getCell(sourceCoords[0], sourceCoords[1]);
 
         String[] rangeParts = targetRange.split(":");
@@ -26,8 +26,8 @@ public class AutoFillManager {
             throw new IllegalArgumentException("Invalid range format: " + targetRange);
         }
 
-        int[] startCoords = CellReferenceConverter.fromCellReference(rangeParts[0]);
-        int[] endCoords = CellReferenceConverter.fromCellReference(rangeParts[1]);
+        int[] startCoords = CellConverter.fromCellReference(rangeParts[0]);
+        int[] endCoords = CellConverter.fromCellReference(rangeParts[1]);
 
         validateRange(startCoords, endCoords);
 
@@ -74,7 +74,7 @@ public class AutoFillManager {
                         sourceContent, sourceType, sourceCoords, new int[]{row, col}
                 );
 
-                String cellRef = CellReferenceConverter.toCellReference(row, col);
+                String cellRef = CellConverter.toCellReference(row, col);
                 spreadsheet.setCellContent(cellRef, content);
             }
         }
@@ -130,7 +130,7 @@ public class AutoFillManager {
     }
 
     private String adjustCellReference(String cellRef, int[] sourceCoords, int[] targetCoords) {
-        int[] refCoords = CellReferenceConverter.fromCellReference(cellRef);
+        int[] refCoords = CellConverter.fromCellReference(cellRef);
 
         int rowOffset = refCoords[0] - sourceCoords[0];
         int colOffset = refCoords[1] - sourceCoords[1];
@@ -140,7 +140,7 @@ public class AutoFillManager {
 
         if (newRow >= 0 && newRow < spreadsheet.getRows() &&
                 newCol >= 0 && newCol < spreadsheet.getCols()) {
-            return CellReferenceConverter.toCellReference(newRow, newCol);
+            return CellConverter.toCellReference(newRow, newCol);
         } else {
             return cellRef;
         }

@@ -1,6 +1,6 @@
 package org.example.model;
 
-import org.example.utils.CellReferenceConverter;
+import org.example.utils.CellConverter;
 
 public class CellArray {
     private final Cell[][] grid;
@@ -31,7 +31,7 @@ public class CellArray {
     }
 
     public Cell getCell(String cellReference) {
-        int[] coordinates = CellReferenceConverter.fromCellReference(cellReference);
+        int[] coordinates = CellConverter.fromCellReference(cellReference);
         return getCell(coordinates[0], coordinates[1]);
     }
 
@@ -44,7 +44,7 @@ public class CellArray {
     }
 
     public void setCell(String cellReference, Cell cell) {
-        int[] coordinates = CellReferenceConverter.fromCellReference(cellReference);
+        int[] coordinates = CellConverter.fromCellReference(cellReference);
         setCell(coordinates[0], coordinates[1], cell);
     }
 
@@ -62,7 +62,7 @@ public class CellArray {
 
     public boolean isValidCellReference(String cellReference) {
         try {
-            int[] coordinates = CellReferenceConverter.fromCellReference(cellReference);
+            int[] coordinates = CellConverter.fromCellReference(cellReference);
             return isValidCoordinate(coordinates[0], coordinates[1]);
         } catch (Exception e) {
             return false;

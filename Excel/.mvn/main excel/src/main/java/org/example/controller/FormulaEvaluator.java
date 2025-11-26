@@ -7,7 +7,7 @@ import org.example.model.Spreadsheet;
 import org.example.model.Stack;
 import org.example.utils.AggregateFunctions;
 import org.example.utils.MathHelper;
-import org.example.utils.ValidationUtils;
+import org.example.utils.Validationformula;
 
 import java.util.List;
 
@@ -45,41 +45,30 @@ public class FormulaEvaluator {
             if (MathHelper.isNumber(token)) {
                 valueStack.push(MathHelper.parseNumber(token));
             } else if (ExpressionParser.isAggregateFunction(token)) {
-                double result = evaluateAggregateFunction(token); // SUM(A1:A3)
+                double result = evaluateAggregateFunction(token);
                 valueStack.push(result);
             } else if (MathHelper.isConstant(token)) {
                 valueStack.push(MathHelper.getConstantValue(token));
             } else if (ExpressionParser.isCellReference(token)) {
                 valueStack.push(getCellValue(token, currentCell));
-            } else if (ExpressionParser.isAggregateFunction(token)) {
-                double result = evaluateAggregateFunction(token); // SUM(A1:A3)
-                valueStack.push(result);
-            } else if (token.equals("U+") || token.equals("U-")) {
-
+            } else if (MathHelper.isUnaryOrPostfixOperator(token)) {
+                // عملگرهای یوناری و پستفیکس
                 if (valueStack.isEmpty()) {
-                    throw new InvalidFormulaException("Insufficient operands for unary operator: " + token);
+                    throw new InvalidFormulaException("Insufficient operands for operator: " + token);
                 }
                 Object operand = valueStack.pop();
-                if (!(operand instanceof Double))
-                    throw new InvalidFormulaException("Unary operator requires numeric operand");
-                double result = MathHelper.applyUnaryOrPostfixOperator(token, (Double) operand);
-                valueStack.push(result);
-            } else if (token.equals("!")) {
-                if (valueStack.isEmpty()) {
-                    throw new InvalidFormulaException("Insufficient operands for postfix operator: " + token);
+                if (!(operand instanceof Double)) {
+                    throw new InvalidFormulaException("Operator " + token + " requires numeric operand");
                 }
-                Object operand = valueStack.pop();
-                if (!(operand instanceof Double))
-                    throw new InvalidFormulaException("Postfix operator requires numeric operand");
                 double result = MathHelper.applyUnaryOrPostfixOperator(token, (Double) operand);
                 valueStack.push(result);
             } else if (token.startsWith("\"") && token.endsWith("\"")) {
                 valueStack.push(token.substring(1, token.length() - 1));
             } else {
+                // عملگرهای باینری
                 if (valueStack.size() < 2) {
                     throw new InvalidFormulaException("Insufficient operands for binary operator: " + token);
                 }
-
                 Object b = valueStack.pop();
                 Object a = valueStack.pop();
 
@@ -115,7 +104,7 @@ public class FormulaEvaluator {
         String range = upperCall.substring(parenStart + 1, parenEnd); // A1:A3
 
         // چک محدوده واقعی
-        if (!ValidationUtils.isValidRange(range)) {
+        if (!Validationformula.isValidRange(range)) {
             throw new IllegalArgumentException("Invalid range format: " + range);
         }
 

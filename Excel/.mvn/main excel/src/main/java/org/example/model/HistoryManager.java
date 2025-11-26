@@ -1,6 +1,6 @@
 package org.example.model;
 import org.example.model.Stack;
-import org.example.utils.CellReferenceConverter;
+import org.example.utils.CellConverter;
 
 public class HistoryManager {
     private final Stack<SpreadsheetState> undoStack;
@@ -42,7 +42,7 @@ public class HistoryManager {
 
         for (int row = 0; row < spreadsheet.getRows(); row++) {
             for (int col = 0; col < spreadsheet.getCols(); col++) {
-                String cellRef = CellReferenceConverter.toCellReference(row, col);
+                String cellRef = CellConverter.toCellReference(row, col);
                 Cell cell = spreadsheet.getCell(cellRef);
                 state.saveCellState(cellRef, cell);
             }
@@ -116,7 +116,7 @@ public class HistoryManager {
     private void applyState(Spreadsheet spreadsheet, SpreadsheetState state) {
         for (int row = 0; row < spreadsheet.getRows(); row++) {
             for (int col = 0; col < spreadsheet.getCols(); col++) {
-                String cellRef = CellReferenceConverter.toCellReference(row, col);
+                String cellRef = CellConverter.toCellReference(row, col);
                 var cellState = state.getCellState(cellRef);
 
                 if (cellState != null) {

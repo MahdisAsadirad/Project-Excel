@@ -3,13 +3,13 @@ package org.example.view;
 import org.example.controller.AutoFillManager;
 import org.example.controller.DependencyManager;
 import org.example.model.Spreadsheet;
-public class CommandProcessor {
+public class Command {
     private Spreadsheet spreadsheet;
     private final SpreadsheetView view;
     private final DependencyManager dependencyManager;
     private final AutoFillManager autoFillManager;
 
-    public CommandProcessor(Spreadsheet spreadsheet) {
+    public Command(Spreadsheet spreadsheet) {
         this.spreadsheet = spreadsheet;
         this.view = new SpreadsheetView(spreadsheet);
         this.dependencyManager = new DependencyManager(spreadsheet);

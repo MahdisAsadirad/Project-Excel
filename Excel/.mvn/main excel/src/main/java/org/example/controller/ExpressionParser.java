@@ -6,7 +6,7 @@ import org.example.model.Operator;
 import org.example.model.Spreadsheet;
 import org.example.model.Stack;
 import org.example.utils.MathHelper;
-import org.example.utils.ValidationUtils;
+import org.example.utils.Validationformula;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -62,7 +62,7 @@ public class ExpressionParser {
                 else if (c == ')') parenCount--;
 
                 if (parenCount == 0) {
-                    tokens.add(currentToken.toString()); // کل تابع به یک توکن
+                    tokens.add(currentToken.toString());
                     currentToken.setLength(0);
                     inFunction = false;
                     lastWasOperator = false;
@@ -70,8 +70,8 @@ public class ExpressionParser {
                 continue;
             }
 
-            // عملیات و پرانتزها
-            if (Operator.isOperator(c) || c == '(' || c == ')') {
+            // عملیات و پرانتزها - منطق بهبود یافته برای عملگرهای یوناری
+            if (Operator.isOperator(c) || c == '(' || c == ')' || c == ',') {
                 if (currentToken.length() > 0) {
                     tokens.add(currentToken.toString());
                     currentToken.setLength(0);
@@ -83,10 +83,15 @@ public class ExpressionParser {
                 } else if (c == ')') {
                     tokens.add(")");
                     lastWasOperator = false;
+                } else if (c == ',') {
+                    tokens.add(",");
+                    lastWasOperator = true;
                 } else if ((c == '+' || c == '-') && (lastWasOperator || i == 0)) {
+                    // عملگر یوناری
                     tokens.add("U" + c);
                     lastWasOperator = true;
                 } else {
+                    // عملگر باینری
                     tokens.add(String.valueOf(c));
                     lastWasOperator = true;
                 }
@@ -101,7 +106,7 @@ public class ExpressionParser {
     }
 
     public static List<String> infixToPostfix(String infixExpression) {
-        ValidationUtils.validateFormula(infixExpression);
+        Validationformula.validateFormula(infixExpression);
         List<String> tokens = tokenize(infixExpression);
         List<String> postfix = new ArrayList<>();
         Stack<String> operatorStack = new Stack<>();
@@ -109,9 +114,9 @@ public class ExpressionParser {
         System.out.println("DEBUG: Tokens: " + tokens);
 
         for (String token : tokens) {
-            if (isOperand(token) || isAggregateFunction(token)) {
+            if (isOperand(token)) {
                 postfix.add(token);
-            }  else if (token.equals("(")) {
+            } else if (token.equals("(")) {
                 operatorStack.push(token);
             } else if (token.equals(")")) {
                 while (!operatorStack.isEmpty() && !operatorStack.peek().equals("(")) {
@@ -121,22 +126,17 @@ public class ExpressionParser {
                     throw new InvalidFormulaException("Mismatched parentheses");
                 }
                 operatorStack.pop(); // حذف '('
-
-                // اگر تابع در استک است، آن را اضافه کن
-                if (!operatorStack.isEmpty() && isAggregateFunction(operatorStack.peek())) {
+            } else if (token.startsWith("U")) {
+                // عملگرهای یوناری اولویت بالایی دارند
+                operatorStack.push(token);
+            } else {
+                // عملگرهای باینری
+                while (!operatorStack.isEmpty() &&
+                        !operatorStack.peek().equals("(") &&
+                        hasHigherPrecedence(operatorStack.peek(), token)) {
                     postfix.add(operatorStack.pop());
                 }
-            } else {
-                if (MathHelper.isPostfixOperator(token)) {
-                    postfix.add(token);
-                } else {
-                    while (!operatorStack.isEmpty() &&
-                            !operatorStack.peek().equals("(") &&
-                            hasHigherPrecedence(operatorStack.peek(), token)) {
-                        postfix.add(operatorStack.pop());
-                    }
-                    operatorStack.push(token);
-                }
+                operatorStack.push(token);
             }
         }
 
@@ -155,41 +155,24 @@ public class ExpressionParser {
         int prec1 = getPrecedence(op1);
         int prec2 = getPrecedence(op2);
 
-        if (prec1 > prec2) {
-            return true;
-        }
-
-        if (prec1 == prec2) {
-            return isLeftAssociative(op1);
-        }
-
-        return false;
-    }
-
-    private static boolean isLeftAssociative(String op) {
-        return !MathHelper.isUnaryOrPostfixOperator(op);
+        return prec1 > prec2 || (prec1 == prec2 && isLeftAssociative(op1));
     }
 
     private static int getPrecedence(String op) {
-        if (MathHelper.isUnaryOrPostfixOperator(op)) {
-            if ("!".equals(op)) {
-                return 4;
-            }
-            return 3;
+        if (op.startsWith("U")) {
+            return 4; // بالاترین اولویت برای عملگرهای یوناری
         }
 
-        if (op.length() == 1) {
-            char c = op.charAt(0);
-            if (Operator.isOperator(c)) {
-                return Operator.fromSymbol(c).getPrecedence();
-            }
+        switch (op) {
+            case "^": return 3;
+            case "*": case "/": return 2;
+            case "+": case "-": return 1;
+            default: return 0;
         }
+    }
 
-        if (isAggregateFunction(op)) {
-            return 5;
-        }
-
-        return 0;
+    private static boolean isLeftAssociative(String op) {
+        return !op.equals("^"); // توان از راست به چپ است
     }
 
     private static boolean isOperand(String token) {

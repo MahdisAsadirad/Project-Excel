@@ -1,11 +1,11 @@
-package org.example.view;
+package org.example.controller;
 
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.example.model.Cell;
 import org.example.model.CellType;
 import org.example.model.Spreadsheet;
-import org.example.utils.CellReferenceConverter;
+import org.example.utils.CellConverter;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,6 +15,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import org.example.view.Command;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -22,7 +23,7 @@ import java.util.ResourceBundle;
 public class SpreadsheetGUIController implements Initializable {
 
     private Spreadsheet spreadsheet;
-    private final CommandProcessor commandProcessor;
+    private final Command commandProcessor;
 
     @FXML private TableView<ObservableList<String>> spreadsheetTable;
     @FXML private TextField commandField;
@@ -35,7 +36,7 @@ public class SpreadsheetGUIController implements Initializable {
     // دیتای جدول، هر سطر یک ObservableList<String> از مقادیر سلول‌هاست
     private final ObservableList<ObservableList<String>> tableData;
 
-    public SpreadsheetGUIController(Spreadsheet spreadsheet, CommandProcessor commandProcessor) {
+    public SpreadsheetGUIController(Spreadsheet spreadsheet, Command commandProcessor) {
         this.spreadsheet = spreadsheet;
         this.commandProcessor = commandProcessor;
         this.tableData = FXCollections.observableArrayList();
@@ -64,7 +65,7 @@ public class SpreadsheetGUIController implements Initializable {
         for (int i = 0; i < spreadsheet.getCols(); i++) {
             final int columnIndex = i;
             TableColumn<ObservableList<String>, String> column = new TableColumn<>(
-                    CellReferenceConverter.getColumnName(i)
+                    CellConverter.getColumnName(i)
             );
 
             //  مقدار دهی: هر سطر خودش یک ObservableList است
@@ -110,7 +111,7 @@ public class SpreadsheetGUIController implements Initializable {
             ObservableList<String> rowData = FXCollections.observableArrayList();
             for (int col = 0; col < spreadsheet.getCols(); col++) {
                 try {
-                    String cellRef = CellReferenceConverter.toCellReference(row, col);
+                    String cellRef = CellConverter.toCellReference(row, col);
                     Cell cell = spreadsheet.getCell(cellRef);
                     rowData.add(cell.getDisplayValue());
                 } catch (Exception e) {
@@ -231,7 +232,7 @@ public class SpreadsheetGUIController implements Initializable {
         int col = selectedCells.get(0).getColumn();
 
         if (row >= 0 && col >= 0) {
-            String cellRef = CellReferenceConverter.toCellReference(row, col);
+            String cellRef = CellConverter.toCellReference(row, col);
             Cell cell = spreadsheet.getCell(cellRef);
 
             String currentValue = cell.getRawContent();
@@ -262,7 +263,7 @@ public class SpreadsheetGUIController implements Initializable {
         int col = selectedCells.get(0).getColumn();
 
         if (row >= 0 && col >= 0) {
-            String cellRef = CellReferenceConverter.toCellReference(row, col);
+            String cellRef = CellConverter.toCellReference(row, col);
             executeCommand("CLEAR " + cellRef);
         }
     }
@@ -327,7 +328,7 @@ public class SpreadsheetGUIController implements Initializable {
         for (int row = 0; row < spreadsheet.getRows(); row++) {
             for (int col = 0; col < spreadsheet.getCols(); col++) {
                 try {
-                    String cellRef = CellReferenceConverter.toCellReference(row, col);
+                    String cellRef = CellConverter.toCellReference(row, col);
                     Cell cell = spreadsheet.getCell(cellRef);
 
                     if (cell.hasError()) {
@@ -503,7 +504,7 @@ public class SpreadsheetGUIController implements Initializable {
             setText(item);
 
             try {
-                String cellRef = CellReferenceConverter.toCellReference(rowIndex, columnIndex);
+                String cellRef = CellConverter.toCellReference(rowIndex, columnIndex);
                 Cell cell = spreadsheet.getCell(cellRef);
 
                 if (cell.hasError()) {

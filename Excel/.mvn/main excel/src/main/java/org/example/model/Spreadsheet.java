@@ -5,8 +5,8 @@ import org.example.controller.ExpressionParser;
 import org.example.controller.FormulaEvaluator;
 import org.example.exceptions.CircularDependencyException;
 import org.example.exceptions.InvalidReferenceException;
-import org.example.utils.CellReferenceConverter;
-import org.example.utils.ValidationUtils;
+import org.example.utils.CellConverter;
+import org.example.utils.Validationformula;
 
 import java.util.*;
 
@@ -83,7 +83,7 @@ public class Spreadsheet {
     public void setCellContent(String cellReference, String content) {
         historyManager.saveState(this);
         validateCellReference(cellReference);
-        int[] coordinates = CellReferenceConverter.fromCellReference(cellReference);
+        int[] coordinates = CellConverter.fromCellReference(cellReference);
         setCellContent(coordinates[0], coordinates[1], content);
     }
 
@@ -108,19 +108,19 @@ public class Spreadsheet {
         cell.setRawContent(trimmedContent);
 
         try {
-            if (ValidationUtils.isFormula(trimmedContent)) {
+            if (Validationformula.isFormula(trimmedContent)) {
                 System.out.println("  -> Processing as FORMULA: " + trimmedContent);
                 cell.setCellType(CellType.FORMULA);
-                String formula = ValidationUtils.extractFormula(trimmedContent);
+                String formula = Validationformula.extractFormula(trimmedContent);
                 processFormula(cell, formula, cellRef);
 
-            } else if (ValidationUtils.isTextContent(trimmedContent)) {
+            } else if (Validationformula.isTextContent(trimmedContent)) {
                 System.out.println("  -> Processing as TEXT");
-                String textValue = ValidationUtils.extractTextContent(trimmedContent);
+                String textValue = Validationformula.extractTextContent(trimmedContent);
                 cell.setCellType(CellType.TEXT);
                 cell.setComputedValue(textValue);
 
-            } else if (ValidationUtils.isNumberContent(trimmedContent)) {
+            } else if (Validationformula.isNumberContent(trimmedContent)) {
                 System.out.println("  -> Processing as NUMBER");
                 double numericValue = Double.parseDouble(trimmedContent);
                 cell.setCellType(CellType.NUMBER);
@@ -156,7 +156,7 @@ public class Spreadsheet {
         try {
             System.out.println("DEBUG: Processing formula: " + formula + " for cell: " + currentCellRef);
 
-            ValidationUtils.validateFormula(formula);
+            Validationformula.validateFormula(formula);
 
             // استخراج وابستگی‌ها از فرمول (شامل سلول‌ها در توابع تجمعی)
             Set<String> dependencies = ExpressionParser.extractCellReferences(formula);
@@ -285,7 +285,7 @@ public class Spreadsheet {
                 if (cell.getCellType() == CellType.FORMULA) {
                     String cellRef = toCellReference(i, j);
                     try {
-                        String formula = ValidationUtils.extractFormula(cell.getRawContent());
+                        String formula = Validationformula.extractFormula(cell.getRawContent());
                         calculateFormulaValue(cell, formula, cellRef);
                     } catch (Exception e) {
                         cell.setErrorType(ErrorType.INVALID_FORMULA);
@@ -320,11 +320,11 @@ public class Spreadsheet {
     }
 
     public static String toCellReference(int row, int col) {
-        return CellReferenceConverter.toCellReference(row, col);
+        return CellConverter.toCellReference(row, col);
     }
 
     public static int[] fromCellReference(String cellReference) {
-        return CellReferenceConverter.fromCellReference(cellReference);
+        return CellConverter.fromCellReference(cellReference);
     }
 
     public int getRows() {
@@ -374,7 +374,7 @@ public class Spreadsheet {
         System.out.println("DEBUG " + cellReference + ":");
         System.out.println("  Raw: '" + cell.getRawContent() + "'");
         System.out.println("  Type: " + cell.getCellType());
-        System.out.println("  IsFormula: " + ValidationUtils.isFormula(cell.getRawContent()));
+        System.out.println("  IsFormula: " + Validationformula.isFormula(cell.getRawContent()));
         System.out.println("  Computed: " + cell.getComputedValue());
         System.out.println("  HasError: " + cell.hasError());
         if (cell.hasError()) {
@@ -395,7 +395,7 @@ public class Spreadsheet {
             for (int col = 0; col < cols; col++) {
                 Cell cell = getCell(row, col);
                 if (cell.hasError())
-                    errorReport.get(cell.getErrorType()).add(CellReferenceConverter.toCellReference(row, col));
+                    errorReport.get(cell.getErrorType()).add(CellConverter.toCellReference(row, col));
             }
 
         return errorReport;

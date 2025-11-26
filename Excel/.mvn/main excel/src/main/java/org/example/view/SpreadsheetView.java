@@ -3,7 +3,7 @@ package org.example.view;
 import org.example.model.Cell;
 import org.example.model.ErrorType;
 import org.example.model.Spreadsheet;
-import org.example.utils.CellReferenceConverter;
+import org.example.utils.CellConverter;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +25,7 @@ public class SpreadsheetView {
     private void displayHeader() {
         System.out.print("   ");
         for (int col = 0; col < spreadsheet.getCols(); col++) {
-            System.out.printf("%-12s", CellReferenceConverter.getColumnName(col));
+            System.out.printf("%-12s", CellConverter.getColumnName(col));
         }
         System.out.println();
     }
@@ -133,6 +133,7 @@ public class SpreadsheetView {
             System.out.printf("  %s : %s%n", ref, msg);
         }
     }
+
 
 
     public void displayCellDetails(String cellReference) {

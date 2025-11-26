@@ -1,9 +1,6 @@
 package org.example.utils;
 
-import org.example.model.Operator;
-
-public class ValidationUtils {
-
+public class Validationformula {
     public static boolean isFormula(String content) {
         if (content == null || content.isEmpty()) {
             return false;
@@ -19,7 +16,7 @@ public class ValidationUtils {
         if (!isFormula(content)) {
             throw new IllegalArgumentException("Not a valid formula: " + content);
         }
-        return content.substring(1).trim(); // حذف = و فضاهای اضافه
+        return content.substring(1).trim();
     }
 
     public static void validateFormula(String formula) {
@@ -27,10 +24,7 @@ public class ValidationUtils {
             throw new IllegalArgumentException("Formula cannot be empty");
         }
 
-        // بررسی پرانتزها
         validateParentheses(formula);
-
-        // بررسی توالی عملگرها
         validateOperatorSequence(formula);
     }
 
@@ -58,17 +52,40 @@ public class ValidationUtils {
             char current = chars[i];
             char next = chars[i + 1];
 
-            if (Operator.isOperator(current) && Operator.isOperator(next) &&
-                    current != '(' && next != ')' && current != ')' && next != '(') {
-                throw new IllegalArgumentException("Invalid operator sequence: " + current + next);
+            if (isBinaryOperator(current) && isBinaryOperator(next)) {
+                if (next != '-') {
+                    throw new IllegalArgumentException("Invalid operator sequence: " + current + next);
+                }
+
+                if (!isValidPositionForUnaryMinus(chars, i)) {
+                    throw new IllegalArgumentException("Invalid operator before negative sign: " + current + next);
+                }
             }
         }
     }
 
+    private static boolean isValidPositionForUnaryMinus(char[] chars, int position) {
+        char current = chars[position];
+
+        if (position == 0) {
+            return true;
+        }
+
+        if (current == '(' || current == ',') {
+            return true; // منفی بعد از پرانتز باز یا کاما مجاز است
+        }
+
+        return isBinaryOperator(current);
+    }
+
+    private static boolean isBinaryOperator(char c) {
+        return c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '=';
+    }
+
+
     public static boolean isTextContent(String content) {
         return content != null && content.startsWith("\"") && content.endsWith("\"") && content.length() >= 2;
     }
-
 
     public static String extractTextContent(String content) {
         if (!isTextContent(content)) {
@@ -88,9 +105,6 @@ public class ValidationUtils {
             return false;
         }
     }
-
-    // utils/ValidationUtils.java
-// اضافه کردن این متد:
 
     public static boolean isValidRange(String range) {
         if (range == null || range.trim().isEmpty()) {
