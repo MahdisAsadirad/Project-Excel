@@ -1,19 +1,19 @@
 package org.example.view;
 
-import org.example.controller.AutoFillManager;
+import org.example.controller.FillManager;
 import org.example.controller.DependencyManager;
 import org.example.model.Spreadsheet;
 public class Command {
     private Spreadsheet spreadsheet;
     private final SpreadsheetView view;
     private final DependencyManager dependencyManager;
-    private final AutoFillManager autoFillManager;
+    private final FillManager autoFillManager;
 
     public Command(Spreadsheet spreadsheet) {
         this.spreadsheet = spreadsheet;
         this.view = new SpreadsheetView(spreadsheet);
         this.dependencyManager = new DependencyManager(spreadsheet);
-        this.autoFillManager = new AutoFillManager(spreadsheet);
+        this.autoFillManager = new FillManager(spreadsheet);
     }
 
     public boolean processCommand(String command) {

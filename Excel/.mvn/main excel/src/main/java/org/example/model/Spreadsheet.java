@@ -1,7 +1,7 @@
 package org.example.model;
 
 
-import org.example.controller.ExpressionParser;
+import org.example.controller.Calculate;
 import org.example.controller.FormulaEvaluator;
 import org.example.exceptions.CircularDependencyException;
 import org.example.exceptions.InvalidReferenceException;
@@ -60,8 +60,7 @@ public class Spreadsheet {
         return historyManager.canRedo();
     }
 
-    public Cell getCell(int row, int col) {
-        return grid.getCell(row, col);
+    public Cell getCell(int row, int col) { return grid.getCell(row, col);
     }
 
     public Cell getCell(String cellReference) {
@@ -134,7 +133,7 @@ public class Spreadsheet {
             Validationformula.validateFormula(formula);
 
             // استخراج وابستگی‌ها از فرمول (شامل سلول‌ها در توابع تجمعی)
-            Set<String> dependencies = ExpressionParser.extractCellReferences(formula);
+            Set<String> dependencies = Calculate.extractCellReferences(formula);
             cell.setDependencies(dependencies);
 
             // اضافه کردن وابستگی‌ها به گراف

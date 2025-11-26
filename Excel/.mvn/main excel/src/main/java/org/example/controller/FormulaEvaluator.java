@@ -20,16 +20,12 @@ public class FormulaEvaluator {
 
     public Object evaluateFormula(String formula, String currentCell) {
         try {
-            System.out.println("DEBUG: Evaluating formula: " + formula + " for cell: " + currentCell);
-
-            List<String> postfixTokens = ExpressionParser.infixToPostfix(formula);
+            List<String> postfixTokens = Calculate.infixToPostfix(formula);
             Object result = evaluatePostfix(postfixTokens, currentCell);
 
-            System.out.println("DEBUG: Formula result: " + result);
             return result;
 
         } catch (Exception e) {
-            System.out.println("DEBUG: Formula evaluation failed: " + e.getMessage());
             throw new InvalidFormulaException("Error evaluating formula: " + formula, e.getMessage());
         }
     }
@@ -38,21 +34,19 @@ public class FormulaEvaluator {
         Stack<Object> valueStack = new Stack<>();
 
         for (String token : postfixTokens) {
-            System.out.println("DEBUG: Processing token: " + token + ", Stack: " + valueStack);
-
             token = token.toUpperCase();
 
             if (MathHelper.isNumber(token)) {
                 valueStack.push(MathHelper.parseNumber(token));
-            } else if (ExpressionParser.isAggregateFunction(token)) {
+            } else if (Calculate.isAggregateFunction(token)) {
                 double result = evaluateAggregateFunction(token);
                 valueStack.push(result);
             } else if (MathHelper.isConstant(token)) {
                 valueStack.push(MathHelper.getConstantValue(token));
-            } else if (ExpressionParser.isCellReference(token)) {
+            } else if (Calculate.isCellReference(token)) {
                 valueStack.push(getCellValue(token, currentCell));
             } else if (MathHelper.isUnaryOrPostfixOperator(token)) {
-                // عملگرهای یوناری و پستفیکس
+                // عملگرهای یوناری unary و پستفیکس
                 if (valueStack.isEmpty()) {
                     throw new InvalidFormulaException("Insufficient operands for operator: " + token);
                 }
@@ -86,7 +80,6 @@ public class FormulaEvaluator {
         }
 
         Object result = valueStack.pop();
-        System.out.println("DEBUG: Final result: " + result);
         return result;
     }
 
@@ -103,7 +96,6 @@ public class FormulaEvaluator {
         String functionName = upperCall.substring(0, parenStart); // SUM
         String range = upperCall.substring(parenStart + 1, parenEnd); // A1:A3
 
-        // چک محدوده واقعی
         if (!Validationformula.isValidRange(range)) {
             throw new IllegalArgumentException("Invalid range format: " + range);
         }
@@ -124,16 +116,11 @@ public class FormulaEvaluator {
         }
     }
 
-
-    private boolean isValidRange(String range) {
-        return range.matches("[A-Za-z]\\d+:[A-Za-z]\\d+");
-    }
-
     private double getCellValue(String cellReference, String currentCell) {
         String normalizedRef = cellReference.toUpperCase();
 
         if (normalizedRef.equals(currentCell)) {
-            throw new InvalidFormulaException("Self-reference detected: " + cellReference);
+            throw new InvalidFormulaException("Invalid formula: " + cellReference);
         }
 
         Cell cell = spreadsheet.getCell(normalizedRef);
@@ -157,10 +144,8 @@ public class FormulaEvaluator {
             Object result = evaluateFormula(formula, currentCellRef);
             cell.setComputedValue(result);
             cell.clearError();
-            System.out.println("DEBUG: Cell formula updated successfully");
         } catch (Exception e) {
             cell.setComputedValue(null);
-            System.out.println("DEBUG: Cell formula update failed: " + e.getMessage());
             throw e;
         }
     }

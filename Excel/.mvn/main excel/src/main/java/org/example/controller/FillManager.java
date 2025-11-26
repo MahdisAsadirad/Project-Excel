@@ -7,11 +7,11 @@ import org.example.utils.CellConverter;
 
 import java.util.regex.Pattern;
 
-public class AutoFillManager {
+public class FillManager {
     private final Spreadsheet spreadsheet;
     private final Pattern cellRefPattern = Pattern.compile("[A-Za-z]\\d+");
 
-    public AutoFillManager(Spreadsheet spreadsheet) {
+    public FillManager(Spreadsheet spreadsheet) {
         this.spreadsheet = spreadsheet;
     }
 

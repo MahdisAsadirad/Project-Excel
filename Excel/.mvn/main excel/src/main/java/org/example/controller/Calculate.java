@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ExpressionParser {
+public class Calculate {
 
     public static List<String> tokenize(String expression) {
         List<String> tokens = new ArrayList<>();
@@ -70,7 +70,6 @@ public class ExpressionParser {
                 continue;
             }
 
-            // عملیات و پرانتزها - منطق بهبود یافته برای عملگرهای یوناری
             if (Operator.isOperator(c) || c == '(' || c == ')' || c == ',') {
                 if (currentToken.length() > 0) {
                     tokens.add(currentToken.toString());
@@ -147,7 +146,6 @@ public class ExpressionParser {
             postfix.add(operatorStack.pop());
         }
 
-        System.out.println("DEBUG: Postfix: " + postfix);
         return postfix;
     }
 
@@ -266,22 +264,11 @@ public class ExpressionParser {
                     double val = ((Number)cell.getComputedValue()).doubleValue();
                     values.add(val);
                 } else {
-                    // اگر سلول خالی است یا مقدار عددی ندارد، صفر در نظر بگیر
+                    // اگر سلول خالیه یا مقدار عددی ندارد صفر در نظر بگیر
                     values.add(0.0);
                 }
             }
         }
         return values;
-    }
-
-    // متد جدید برای استخراج محدوده از تابع تجمعی
-    public static String extractRangeFromFunction(String functionCall) {
-        if (!isAggregateFunction(functionCall)) {
-            throw new IllegalArgumentException("Not an aggregate function: " + functionCall);
-        }
-
-        int start = functionCall.indexOf('(') + 1;
-        int end = functionCall.lastIndexOf(')');
-        return functionCall.substring(start, end);
     }
 }
