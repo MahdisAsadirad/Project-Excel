@@ -115,6 +115,7 @@ public class DependencyManager {
         }
     }
 
+
     private void propagateError(String errorCellRef) {
         Set<String> visited = new HashSet<>();
         Queue<String> queue = new Queue<>();

@@ -4,7 +4,7 @@ import java.util.EmptyStackException;
 
 public class Stack<T> {
     private static final int DEFAULT_CAPACITY = 100;
-    private Object[] elements;
+    private final Object[] elements;
     private int top;
     private int size;
     private final int capacity;

@@ -3,7 +3,6 @@ package org.example.utils;
 import org.example.exceptions.DivisionByZeroException;
 import org.example.exceptions.InvalidExponentiationException;
 import org.example.exceptions.InvalidFactorialException;
-import org.example.exceptions.InvalidSquareRootException;
 
 public class MathHelper {
 

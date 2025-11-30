@@ -56,7 +56,7 @@ public class FormulaEvaluator {
                 }
                 double result = MathHelper.applyUnaryOrPostfixOperator(token, (Double) operand);
                 valueStack.push(result);
-            } else if (token.startsWith("\"") && token.endsWith("\"")) {
+            } else if ((token.startsWith("\"") && token.endsWith("\""))|| (token.startsWith("”") && token.endsWith("”"))) {
                 valueStack.push(token.substring(1, token.length() - 1));
             } else {
                 // عملگرهای باینری

@@ -60,7 +60,8 @@ public class Spreadsheet {
         return historyManager.canRedo();
     }
 
-    public Cell getCell(int row, int col) { return grid.getCell(row, col);
+    public Cell getCell(int row, int col) {
+        return grid.getCell(row, col);
     }
 
     public Cell getCell(String cellReference) {
@@ -132,7 +133,7 @@ public class Spreadsheet {
         try {
             Validationformula.validateFormula(formula);
 
-            // استخراج وابستگی‌ها از فرمول (شامل سلول‌ها در توابع تجمعی)
+            // استخراج وابستگی‌ها از فرمول (شامل سلول‌ها در توابع تجمعی)، تمام رفرنس ها استخراج و ذخیره میشن
             Set<String> dependencies = Calculate.extractCellReferences(formula);
             cell.setDependencies(dependencies);
 
@@ -211,6 +212,7 @@ public class Spreadsheet {
         return false;
     }
 
+    //اگر سلولی ارور گرفت، همه سلول هایی که به این سلول وابسته هستند باید ارور بگیرند
     private void propagateError(String errorCellRef) {
         Set<String> visited = new HashSet<>();
         Queue<String> queue = new Queue<>();
@@ -238,17 +240,20 @@ public class Spreadsheet {
         }
     }
 
+    //چه سلول‌هایی وقتی این سلول تغییر کنن باید آپدیت شن؟
     public Set<String> getDependents(String cellReference) {
         validateCellReference(cellReference);
         return new HashSet<>(dependencyGraph.getOrDefault(cellReference, new HashSet<>()));
     }
 
+    //این سلول از چه سلول‌هایی استفاده کرده (فرمولش)؟
     public Set<String> getDependencies(String cellReference) {
         validateCellReference(cellReference);
         Cell cell = getCell(cellReference);
         return cell.getDependencies();
     }
 
+    //محاسبه دوباره سلول ها
     public void recalculateAll() {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -267,10 +272,12 @@ public class Spreadsheet {
         }
     }
 
+    //ایا این سلول در اکسل وجود دارد
     public boolean isValidCellReference(String cellReference) {
         return grid.isValidCellReference(cellReference);
     }
 
+    //ایا این ردیف و این ستون در جدول وجود دارند
     public boolean isValidCoordinate(int row, int col) {
         return grid.isValidCoordinate(row, col);
     }
@@ -290,6 +297,7 @@ public class Spreadsheet {
         }
     }
 
+    //تبدیل اندیس ها به سلول
     public static String toCellReference(int row, int col) {
         return CellConverter.toCellReference(row, col);
     }

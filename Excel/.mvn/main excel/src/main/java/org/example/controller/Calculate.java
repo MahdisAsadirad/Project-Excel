@@ -110,8 +110,6 @@ public class Calculate {
         List<String> postfix = new ArrayList<>();
         Stack<String> operatorStack = new Stack<>();
 
-        System.out.println("DEBUG: Tokens: " + tokens);
-
         for (String token : tokens) {
             if (isOperand(token)) {
                 postfix.add(token);
@@ -179,7 +177,7 @@ public class Calculate {
                 isCellReference(token) ||
                 isRangeReference(token) ||
                 isAggregateFunction(token) ||
-                (token.startsWith("\"") && token.endsWith("\""));
+                ((token.startsWith("\"") && token.endsWith("\"")) || (token.startsWith("”") && token.endsWith("”")) );
     }
 
     public static boolean isCellReference(String token) {

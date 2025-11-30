@@ -5,6 +5,7 @@ import org.example.utils.MathHelper;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.*;
 
 public class Cell {
     private String rawContent;
@@ -13,7 +14,6 @@ public class Cell {
     private Set<String> dependencies; // سلول‌هایی که این سلول به آنها وابسته است
     private ErrorType errorType;
     private String errorMessage;
-    private boolean visited; // برای الگوریتم‌های پیمایش
 
     public Cell() {
         this.rawContent = "";
@@ -22,7 +22,6 @@ public class Cell {
         this.dependencies = new HashSet<>();
         this.errorType = ErrorType.NO_ERROR;
         this.errorMessage = "";
-        this.visited = false;
     }
 
     public Cell(String rawContent, CellType cellType) {
@@ -36,7 +35,11 @@ public class Cell {
     }
 
     public void setRawContent(String rawContent) {
-        this.rawContent = rawContent != null ? rawContent : "";
+        if (rawContent != null) {
+            this.rawContent = rawContent;
+        } else {
+            this.rawContent = "";
+        }
     }
 
     public Object getComputedValue() {
@@ -134,7 +137,7 @@ public class Cell {
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(rawContent, computedValue, cellType, errorType, dependencies);
+        return Objects.hash(rawContent, computedValue, cellType, errorType, dependencies);
     }
 
     public String getDisplayValue() {
@@ -154,7 +157,7 @@ public class Cell {
         }
 
         if (cellType == CellType.TEXT) {
-            if (rawContent.startsWith("\"") && rawContent.endsWith("\"")) {
+            if ((rawContent.startsWith("\"") && rawContent.endsWith("\"")) || (rawContent.startsWith("”") && rawContent.endsWith("”"))) {
                 return rawContent.substring(1, rawContent.length() - 1);
             }
             return rawContent;
