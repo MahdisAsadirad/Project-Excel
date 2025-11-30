@@ -178,6 +178,7 @@ public class Calculate {
                 MathHelper.isConstant(token) ||
                 isCellReference(token) ||
                 isRangeReference(token) ||
+                isAggregateFunction(token) ||
                 (token.startsWith("\"") && token.endsWith("\""));
     }
 

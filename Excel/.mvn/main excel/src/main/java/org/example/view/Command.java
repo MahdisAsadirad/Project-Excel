@@ -17,33 +17,28 @@ public class Command {
     }
 
     public boolean processCommand(String command) {
-        String upperCommand = command.toUpperCase().trim();
+        if (command == null) return true;
+        String trimmed = command.trim();
+        String upperTrimmed = trimmed.toUpperCase();
 
-        if (command.matches("^[A-Za-z]+\\d+\\s*=.*")) {
-            processSet(command);
+        // پذیرش ورودی حتی اگر با فضای خالی شروع شده باشد
+        if (trimmed.matches("(?i)^\\s*[A-Za-z]+\\d+\\s*=.*")) {
+            processSet(trimmed);
             return true;
         }
 
-        if (command.matches("^[A-Za-z]+\\d+\\s*=\\s*[^=].*")) {
-            processSet(command);
+        if (upperTrimmed.startsWith("CLEAR")) {
+            processClearCommand(trimmed);
             return true;
-        }
-        if (upperCommand.startsWith("CLEAR")) {
-            processClearCommand(command);
+        } else if (upperTrimmed.startsWith("FILL")) {
+            processFillCommand(trimmed);
             return true;
-        }
-
-        else if (upperCommand.startsWith("FILL")) {
-            processFillCommand(command);
-            return true;
-        }
-        else if (upperCommand.startsWith("DETAIL ")) {
-            processDetailCommand(command);
+        } else if (upperTrimmed.startsWith("DETAIL")) {
+            processDetailCommand(trimmed);
             return true;
         }
 
-
-        switch (upperCommand) {
+        switch (upperTrimmed) {
             case "QUIT":
                 System.out.println("Goodbye!");
                 return false;
@@ -68,6 +63,7 @@ public class Command {
 
         return true;
     }
+
 
 
     private void processSet(String command) {
@@ -102,6 +98,8 @@ public class Command {
         }
     }
 
+
+
     private String preprocessValue(String value) {
         if (value == null || value.trim().isEmpty()) {
             return value;
@@ -109,13 +107,17 @@ public class Command {
 
         String trimmed = value.trim();
 
+        if (trimmed.startsWith("=")) {
+            return trimmed;
+        }
+
         if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
                 (trimmed.startsWith("”") && trimmed.endsWith("”"))) {
             return trimmed;
         }
 
-        if (trimmed.startsWith("=")) {
-            return trimmed;
+        if (shouldBeTreatedAsFormula(trimmed)) {
+            return "=" + trimmed;
         }
 
         if (containsAggregateFunction(trimmed)) {
@@ -133,22 +135,54 @@ public class Command {
         if (looksLikeFormula(trimmed)) {
             return "=" + trimmed;
         }
-
         try {
             Double.parseDouble(trimmed);
             return trimmed;
         } catch (NumberFormatException e) { }
+
         return trimmed;
     }
+
+    private boolean shouldBeTreatedAsFormula(String value){
+        // اگر با عملگر ریاضی شروع می‌شود (مثل +1, -5)
+        if (value.matches("^[+\\-].*") && !value.matches("^[+-]?\\d+(\\.\\d+)?$")) {
+            return true;
+        }
+
+        // اگر حاوی عملگرهای ریاضی است
+        if (value.matches(".*[+\\-*/^].*")) {
+            return true;
+        }
+
+        // اگر حاوی تابع تجمعی است
+        if (containsAggregateFunction(value)) {
+            return true;
+        }
+
+        // اگر حاوی ارجاع سلولی است
+        if (value.matches(".*[A-Za-z]\\d+.*")) {
+            return true;
+        }
+
+        // اگر حاوی فاکتوریل یا ثابت است
+        if (value.contains("!") || value.matches(".*\\b(PI|E|pi|e)\\b.*")) {
+            return true;
+        }
+
+        // اگر حاوی محدوده است
+        if (value.matches(".*[A-Za-z]\\d+\\s*:\\s*[A-Za-z]\\d+.*")) {
+            return true;
+        }
+
+        return false;
+    }
+
+
 
     private boolean containsAggregateFunction(String value) {
         if (value == null) return false;
         String upperValue = value.toUpperCase();
-        return upperValue.contains("SUM(") ||
-                upperValue.contains("AVG(") ||
-                upperValue.contains("MAX(") ||
-                upperValue.contains("MIN(") ||
-                upperValue.contains("COUNT(");
+        return upperValue.matches(".*\\b(SUM|AVG|MAX|MIN|COUNT)\\s*\\(.*");
     }
 
     private boolean looksLikeFormula(String value) {
