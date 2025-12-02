@@ -48,7 +48,7 @@ public class Main extends Application {
         if (result.isPresent()) {
             try {
                 int value = Integer.parseInt(result.get());
-                if (value > 0 && value <= 26) { // محدودیت منطقی
+                if (value > 0 && value <= 26) {
                     return value;
                 } else {
                     showErrorDialog("Invalid dimension! Please enter a number between 1 and 26.");
@@ -56,7 +56,7 @@ public class Main extends Application {
                 }
             } catch (NumberFormatException e) {
                 showErrorDialog("Invalid number format! Please enter a valid integer.");
-                return getGridDimension(message, defaultValue); // تلاش مجدد
+                return getGridDimension(message, defaultValue);
             }
         } else {
             System.exit(0);
